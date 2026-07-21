@@ -16,8 +16,10 @@
 // the same OS signal, so the two stay in step. dark.neutral == dark.land so
 // "no change" dissolves into the map (docs §4 rule) in both themes.
 const THEME = {
-  light: { land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2" },
-  dark:  { land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27" },
+  light: { land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2",
+           africa: "#E8E6DB", river: "#B6C2BC", box: "#646A60" },
+  dark:  { land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27",
+           africa: "#1A1E1A", river: "#33403B", box: "#9BA294" },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
@@ -85,8 +87,13 @@ const map = new maplibregl.Map({
   style: "style.json",
   center: fromHash ? fromHash.center : HOME.center,
   zoom: fromHash ? fromHash.zoom : HOME.zoom,
-  minZoom: 3,
+  // Zoom-out stops once Africa fills the frame (context only — where South
+  // Sudan sits in the continent; other continents are out of scope). The
+  // bounds hug Africa, so maxBounds is what actually halts zoom-out and
+  // keeps panning on the continent; minZoom is just a hard floor behind it.
+  minZoom: 2.2,
   maxZoom: 15,
+  maxBounds: [[-26, -36], [57, 38]],
   attributionControl: false,
   hash: false,            // we manage the hash ourselves (it also carries period)
   dragRotate: false,
@@ -98,7 +105,7 @@ map.addControl(new maplibregl.AttributionControl({
   compact: true,
   customAttribution: [
     "Building change © Google Open Buildings Temporal (CC BY 4.0)",
-    "Boundaries © Natural Earth",
+    "Boundaries & rivers © Natural Earth",
   ],
 }), "bottom-right");
 
@@ -118,6 +125,7 @@ map.on("load", () => {
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
   loadData();
   loadTowns();
+  ensurePlaceBoxes();           // examples.json may already be in (fetch races the style)
   if (state.example) selectExample(state.example, { instant: true });
   writeHash();
 });
@@ -134,6 +142,11 @@ function applyTheme() {
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
   if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-color", t.underlay);
+  if (map.getLayer("africa-fill")) map.setPaintProperty("africa-fill", "fill-color", t.africa);
+  if (map.getLayer("africa-lines")) map.setPaintProperty("africa-lines", "line-color", t.admin);
+  if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
+  if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
+  if (map.getLayer("place-box-fill")) map.setPaintProperty("place-box-fill", "fill-color", t.box);
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
   map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
 }
@@ -190,6 +203,7 @@ function applyPeriod(key, opts = {}) {
   const p = PERIODS[key];
   if (map.getLayer("change-fill")) map.setPaintProperty("change-fill", "fill-color", changeColor(p));
   if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-opacity", underlayOpacity(p));
+  applyPlaceFilter();                       // boxes belong to one epoch each
   document.querySelectorAll("#period-switch button").forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.period === key)));
   document.getElementById("legend-title").textContent =
@@ -205,8 +219,69 @@ let EXAMPLES = [];
 function loadExamples() {
   fetch("data/examples.json")
     .then((r) => r.json())
-    .then((data) => { EXAMPLES = data.examples || []; renderCards(); })
+    .then((data) => { EXAMPLES = data.examples || []; renderCards(); ensurePlaceBoxes(); })
     .catch((err) => console.warn("could not load examples.json", err));
+}
+
+/* Place boxes: a subtle dashed rectangle around each example, shown only when
+ * its epoch is selected (the filter is applied in applyPeriod). They invite a
+ * click without shouting: label-grey, low opacity, brightening on hover. */
+function placeBoxFeatures() {
+  return EXAMPLES.map((ex, i) => {
+    const span = ex.span_km || 14;                       // box edge length, km
+    const dLat = span / 2 / 110.6;
+    const dLon = span / 2 / (111.32 * Math.cos((ex.lat * Math.PI) / 180));
+    const [w, e, s, n] = [ex.lon - dLon, ex.lon + dLon, ex.lat - dLat, ex.lat + dLat];
+    return {
+      type: "Feature",
+      id: i,                                             // numeric id for feature-state hover
+      properties: { id: ex.id, period: ex.period || "war" },
+      geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+    };
+  });
+}
+
+function ensurePlaceBoxes() {
+  if (!EXAMPLES.length || !map.getLayer("admin-land") || map.getSource("places")) return;
+  const t = theme();
+  map.addSource("places", { type: "geojson",
+    data: { type: "FeatureCollection", features: placeBoxFeatures() } });
+  map.addLayer({
+    id: "place-box-fill", type: "fill", source: "places", minzoom: 4.4,
+    paint: { "fill-color": t.box,
+      "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.10, 0.04] },
+  });
+  map.addLayer({
+    id: "place-box-line", type: "line", source: "places", minzoom: 4.4,
+    layout: { "line-join": "round" },
+    paint: { "line-color": t.box, "line-dasharray": [3, 2.5], "line-width": 1.4,
+      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.55] },
+  });
+  applyPlaceFilter();
+
+  let hovered = null;
+  map.on("mousemove", "place-box-fill", (e) => {
+    const id = e.features.length ? e.features[0].id : null;
+    if (hovered !== null && hovered !== id)
+      map.setFeatureState({ source: "places", id: hovered }, { hover: false });
+    if (id !== null) map.setFeatureState({ source: "places", id }, { hover: true });
+    hovered = id;
+    map.getCanvas().style.cursor = "pointer";
+  });
+  map.on("mouseleave", "place-box-fill", () => {
+    if (hovered !== null) map.setFeatureState({ source: "places", id: hovered }, { hover: false });
+    hovered = null;
+    map.getCanvas().style.cursor = "";
+  });
+  map.on("click", "place-box-fill", (e) => {
+    if (e.features.length) selectExample(e.features[0].properties.id);
+  });
+}
+
+function applyPlaceFilter() {
+  const filter = ["==", ["get", "period"], state.period];
+  if (map.getLayer("place-box-fill")) map.setFilter("place-box-fill", filter);
+  if (map.getLayer("place-box-line")) map.setFilter("place-box-line", filter);
 }
 
 function renderCards() {
