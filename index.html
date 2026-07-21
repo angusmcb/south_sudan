@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+  <title>South Sudan — Settlement Change</title>
+  <meta name="description" content="A fast, public map of change in building counts across South Sudan, 2016–2023. Buildings are used as a proxy for where people live." />
+  <!-- Vendored, self-hosted. Relative paths only: the site is served from a
+       subpath (…github.io/ssd_rs/), so a leading slash would break. -->
+  <link rel="stylesheet" href="vendor/maplibre-gl.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map" aria-label="Map of settlement change in South Sudan"></div>
+
+  <!-- Title / strapline -->
+  <header class="card titlecard" id="titlecard">
+    <h1>South&nbsp;Sudan — Settlement&nbsp;Change</h1>
+    <p class="strap">Change in the number of buildings between two years. Buildings
+      are a proxy for where people live, so shifts hint at displacement, return and
+      new settlement.</p>
+    <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
+  </header>
+
+  <!-- Period switch -->
+  <div class="card period-switch" role="radiogroup" aria-label="Time period" id="period-switch">
+    <!-- buttons injected by app.js from the PERIODS table -->
+  </div>
+
+  <!-- Legend -->
+  <aside class="card legend" id="legend" aria-label="Legend">
+    <div class="legend-title" id="legend-title">Change in buildings per 1.2&nbsp;km cell</div>
+    <div class="legend-ramp" role="img" aria-label="Diverging colour ramp from rust (buildings lost) through neutral (no change) to teal (buildings gained)"></div>
+    <div class="legend-ends"><span>Lost</span><span>No change</span><span>Gained</span></div>
+    <div class="legend-foot">Grey shows stable settlement; blank is unsettled land.</div>
+  </aside>
+
+  <!-- Places drawer -->
+  <button class="card drawer-toggle" id="drawer-toggle" aria-expanded="false" aria-controls="drawer">
+    Places
+  </button>
+  <aside class="card drawer" id="drawer" hidden aria-label="Example places">
+    <div class="drawer-head">
+      <h2>Places to look</h2>
+      <button class="icon-btn" id="drawer-close" aria-label="Close places">✕</button>
+    </div>
+    <p class="drawer-note">Illustrative locations — each must be checked against the
+      published data before it is presented as evidence.</p>
+    <div class="cards" id="cards"><!-- injected --></div>
+  </aside>
+
+  <!-- Data-status banner (shown while no settlement-change layer is published) -->
+  <div class="banner" id="data-banner" hidden>
+    <span></span>
+    <button class="icon-btn" id="banner-close" aria-label="Dismiss">✕</button>
+  </div>
+
+  <!-- About dialog -->
+  <div class="modal-backdrop" id="about" hidden>
+    <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <button class="icon-btn modal-close" id="about-close" aria-label="Close">✕</button>
+      <h2 id="about-title">About this map</h2>
+      <p>The unit shown is the <strong>change in building counts</strong> between two
+        years, per 1.2&nbsp;km cell. Settlement in South Sudan is dominated by tukuls,
+        so building counts are used as a measurable <em>proxy</em> for where people
+        live — but the map itself only claims buildings gained or lost. Whether a
+        change reflects displacement, return, flooding, or ordinary growth is the
+        interpretation carried by the labelled places, not by the colour alone.</p>
+      <p>Two periods are shown, split at the 2018 revitalised peace agreement:
+        a civil-war period (2016→2018) and a post-agreement period (2019→2023).</p>
+      <h3>Sources</h3>
+      <ul>
+        <li><strong>Building change</strong>: Google Open Buildings Temporal v1
+          (CC&nbsp;BY&nbsp;4.0). Future epochs will use this project's own model outputs.</li>
+        <li><strong>Boundaries</strong>: Natural Earth, public domain. Shown for
+          orientation only; not an authority on alignments.</li>
+        <li>Built with MapLibre GL JS and PMTiles (both BSD-3-Clause), self-hosted.</li>
+      </ul>
+      <p class="fineprint">Example locations are illustrative and must be verified
+        against the published rasters before being presented as evidence of
+        displacement.</p>
+    </div>
+  </div>
+
+  <script defer src="vendor/pmtiles.js"></script>
+  <script defer src="vendor/maplibre-gl.js"></script>
+  <script defer src="app.js"></script>
+</body>
+</html>

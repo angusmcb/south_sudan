@@ -1,0 +1,242 @@
+/* Settlement-change viewer — all styling.
+   Palette matches docs/viewer_design.md §4. Light is the default for a public
+   humanitarian audience; a dark variant follows prefers-color-scheme. */
+
+:root {
+  --paper:   #EFEDE3;   /* land / page — sits at the ramp midpoint */
+  --water:   #D5D9D3;
+  --admin:   #B7BAAC;
+  --ink:     #3A3F38;   /* body text */
+  --label:   #646A60;   /* town labels */
+  --rust:    #BC4F25;   /* buildings lost */
+  --neutral: #E8E6DB;   /* no change */
+  --teal:    #2E7E72;   /* buildings gained */
+  --card-bg: rgba(252, 251, 246, 0.92);
+  --card-line: rgba(90, 96, 84, 0.18);
+  --shadow: 0 1px 2px rgba(40, 42, 34, 0.08), 0 6px 20px rgba(40, 42, 34, 0.12);
+  --radius: 10px;
+  --ramp: linear-gradient(90deg, var(--rust) 0%, var(--neutral) 50%, var(--teal) 100%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:   #141714;
+    --water:   #1B1F1B;
+    --admin:   #3A3F38;
+    --ink:     #D9D6CB;
+    --label:   #A7AC9E;
+    --rust:    #E06B3B;
+    --neutral: #5A5E54;   /* legend-ramp middle only; the map dissolves no-change (app.js) */
+    --teal:    #4AA894;
+    --card-bg: rgba(24, 27, 23, 0.90);
+    --card-line: rgba(200, 205, 190, 0.16);
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.45);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+/* class rules that set display (.modal-backdrop, .banner) would otherwise
+   beat the UA [hidden] rule; keep [hidden] authoritative. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+#map { position: absolute; inset: 0; background: var(--paper); }
+.maplibregl-canvas { outline: none; }
+
+/* ---- floating cards ---- */
+.card {
+  position: absolute;
+  z-index: 5;
+  background: var(--card-bg);
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.titlecard {
+  top: 14px; left: 14px;
+  max-width: 310px;
+  padding: 14px 16px;
+}
+.titlecard h1 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.titlecard .strap { margin: 0 0 8px; font-size: 12.5px; color: var(--label); }
+
+.linkish {
+  border: 0; background: none; padding: 0;
+  color: var(--teal); font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.linkish:hover { opacity: 0.8; }
+
+/* ---- period switch (segmented) ---- */
+.period-switch {
+  top: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 2px; padding: 3px;
+}
+.period-switch button {
+  border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 550; color: var(--label);
+  padding: 7px 14px; border-radius: 7px; white-space: nowrap;
+  transition: background 120ms, color 120ms;
+}
+.period-switch button:hover { color: var(--ink); }
+.period-switch button[aria-checked="true"] {
+  background: var(--teal); color: #fff;
+}
+.period-switch button:focus-visible {
+  outline: 2px solid var(--teal); outline-offset: 2px;
+}
+
+/* ---- legend ---- */
+.legend {
+  bottom: 26px; left: 14px;
+  width: 236px; padding: 11px 13px;
+}
+.legend-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.legend-ramp {
+  height: 12px; border-radius: 3px; background: var(--ramp);
+  border: 1px solid var(--card-line);
+}
+.legend-ends {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--label); margin-top: 4px;
+}
+.legend-foot { font-size: 10.5px; color: var(--label); margin-top: 6px; line-height: 1.35; }
+
+/* ---- places drawer ---- */
+.drawer-toggle {
+  top: 14px; right: 14px;
+  padding: 9px 15px; border: 1px solid var(--card-line);
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--ink);
+  cursor: pointer;
+}
+.drawer-toggle:hover { color: var(--teal); }
+
+.drawer {
+  top: 14px; right: 14px;
+  width: 300px; max-width: calc(100vw - 28px);
+  max-height: calc(100vh - 28px);
+  padding: 14px 16px; overflow-y: auto;
+}
+.drawer-head { display: flex; align-items: center; justify-content: space-between; }
+.drawer-head h2 { margin: 0; font-size: 15px; }
+.drawer-note { font-size: 11.5px; color: var(--label); margin: 6px 0 12px; }
+
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.place {
+  text-align: left; cursor: pointer;
+  background: rgba(120, 126, 110, 0.06);
+  border: 1px solid var(--card-line); border-radius: 8px;
+  padding: 9px 11px; font: inherit; color: var(--ink);
+  transition: background 120ms, border-color 120ms;
+}
+.place:hover { background: rgba(46, 126, 114, 0.10); border-color: rgba(46,126,114,0.4); }
+.place:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.place[aria-current="true"] { border-color: var(--teal); background: rgba(46,126,114,0.12); }
+.place .place-name { display: block; font-weight: 600; font-size: 13.5px; }
+.place .place-cap { display: block; font-size: 11.5px; color: var(--label); margin-top: 2px; }
+.tag {
+  display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.03em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px;
+}
+.tag.conflict { background: rgba(188,79,37,0.15);  color: var(--rust); }
+.tag.flood    { background: rgba(70,120,150,0.15); color: #40708f; }
+.tag.arrivals { background: rgba(46,126,114,0.15); color: var(--teal); }
+.tag.growth   { background: rgba(120,126,110,0.18); color: var(--label); }
+.place .unverified { font-size: 10px; color: var(--label); margin-left: 6px; font-style: italic; }
+
+/* ---- town labels (DOM markers; no glyphs needed) ---- */
+.town {
+  font-size: 11px; font-weight: 600; color: var(--label);
+  text-shadow: 0 0 3px var(--paper), 0 0 3px var(--paper), 0 0 6px var(--paper);
+  pointer-events: none; white-space: nowrap; letter-spacing: 0.01em;
+}
+.town::before {
+  content: ""; display: inline-block; width: 3px; height: 3px; margin-right: 4px;
+  border-radius: 50%; background: var(--label); vertical-align: middle;
+}
+
+/* ---- data-status banner ---- */
+.banner {
+  position: absolute; z-index: 6; left: 50%; bottom: 22px; transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 28px));
+  display: flex; gap: 10px; align-items: center;
+  background: var(--card-bg); border: 1px solid var(--card-line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 9px 12px; font-size: 12.5px; color: var(--ink);
+}
+
+/* ---- icon buttons / dialog ---- */
+.icon-btn {
+  border: 0; background: none; cursor: pointer; color: var(--label);
+  font-size: 15px; line-height: 1; padding: 4px; border-radius: 6px;
+}
+.icon-btn:hover { color: var(--ink); }
+.icon-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+.modal-backdrop {
+  position: absolute; inset: 0; z-index: 20;
+  background: rgba(20, 22, 18, 0.35);
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.modal {
+  position: relative; max-width: 480px; max-height: calc(100vh - 40px);
+  overflow-y: auto; padding: 22px 24px;
+}
+.modal-close { position: absolute; top: 12px; right: 12px; }
+.modal h2 { margin: 0 0 10px; font-size: 18px; }
+.modal h3 { margin: 16px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--label); }
+.modal p, .modal li { font-size: 13px; }
+.modal ul { margin: 0; padding-left: 18px; }
+.modal li { margin-bottom: 5px; }
+.fineprint { color: var(--label); font-size: 11.5px !important; margin-top: 14px; }
+
+/* ---- mobile: a clean vertical stack, no overlapping controls ---- */
+@media (max-width: 640px) {
+  /* top row: compact title (never reaches the Places button) + Places */
+  .titlecard { top: 12px; left: 12px; max-width: calc(100vw - 108px); padding: 10px 12px; }
+  .titlecard h1 { font-size: 15px; }
+  .titlecard .strap { display: none; }               /* full text lives in About */
+  .drawer-toggle { top: 12px; right: 12px; padding: 8px 12px; }
+
+  /* status banner: full-width notice clear of the two-line title card */
+  .banner { top: 116px; bottom: auto; left: 12px; right: 12px; transform: none;
+            max-width: none; }
+
+  /* period switch: bottom-centre (thumb zone) */
+  .period-switch { top: auto; bottom: 14px; left: 50%; transform: translateX(-50%); }
+  .period-switch button { padding: 6px 11px; font-size: 12.5px; }
+
+  /* legend: above the switch, full width */
+  .legend { bottom: 62px; left: 12px; right: 12px; width: auto; padding: 9px 12px; }
+
+  /* places: bottom sheet */
+  .drawer { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: 62vh; }
+
+  /* touch devices pinch-zoom: drop the +/- buttons so they don't fight the
+     bottom-centre switch; keep attribution, moved out of the switch's way */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
+  .maplibregl-ctrl-bottom-right { bottom: 60px; }
+}
+
+/* ---- reduced motion: MapLibre easing is handled in app.js (jumpTo) ---- */
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+}

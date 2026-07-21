@@ -1,0 +1,327 @@
+/* Settlement-change viewer — vanilla-JS glue over MapLibre GL + PMTiles.
+ * Responsibilities (docs/viewer_design.md §6): register the pmtiles protocol,
+ * build the map from the committed style.json, drive the period switch by
+ * mutating paint properties on ONE tileset, fly to example places, keep all
+ * view state in the URL hash. No build step, no framework.
+ *
+ * The settlement-change layer is not published yet, so DATA_URL is null and the
+ * 'aggregates' source stays empty; the shell, switch, legend and places all work
+ * against it. When tiles land, point DATA_URL at the release (see loadData). */
+
+"use strict";
+
+// ---- palette (mirrors style.css / docs §4), theme-aware ----
+// The map background/lines/ramp are set from JS because a MapLibre style is
+// static JSON and can't follow prefers-color-scheme; the CSS chrome follows
+// the same OS signal, so the two stay in step. dark.neutral == dark.land so
+// "no change" dissolves into the map (docs §4 rule) in both themes.
+const THEME = {
+  light: { land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2" },
+  dark:  { land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27" },
+};
+const themeQuery = matchMedia("(prefers-color-scheme: dark)");
+const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
+
+// ---- data source (null until settlement-change tiles are published) ----
+// v0 is a single GeoJSON of per-year building counts (docs §7 shortcut):
+//   const DATA_URL = "data/counts_v0.geojson";
+// National builds publish PMTiles as release assets on the public bucket:
+//   const DATA_URL = "https://<public-bucket>/releases/<id>/tiles/aggregates.pmtiles";
+// For PMTiles, set DATA_IS_PMTILES = true (swaps the source instead of setData).
+const DATA_URL = null;
+const DATA_IS_PMTILES = false;
+
+// ---- periods: the switch and every colour read these ----
+// Counts are stored per-year as feature attributes (c2016, c2018, …); Δ is
+// computed here, so switching period is a paint change with no tile refetch.
+const PERIODS = {
+  war:  { label: "War 2016→18",          from: "c2016", to: "c2018" },
+  post: { label: "Post-agreement 2019→23", from: "c2019", to: "c2023" },
+};
+const DEFAULT_PERIOD = "war";
+
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const HOME = { center: [29.75, 7.5], zoom: 5.4 };
+
+const state = { period: DEFAULT_PERIOD, example: null };
+
+/* -------------------------------------------------------------------------- */
+/* Ramp / colour — the ONE place the change representation is decided.         */
+/* OPEN (docs §5): counts-Δ ramp vs thresholded-presence categories is not     */
+/* settled, and the linear stops below are placeholders. Set saturation from   */
+/* Δ percentiles over settled patches and a deadzone from the measured noise   */
+/* floor (the EE ramp sandbox exists for exactly this). Edit here only.        */
+/* -------------------------------------------------------------------------- */
+const RAMP_CLAMP = 50;          // Δ buildings at full rust / full teal (placeholder)
+
+function deltaExpr(p) {
+  return ["-", ["coalesce", ["get", p.to], 0], ["coalesce", ["get", p.from], 0]];
+}
+function changeColor(p) {
+  const t = theme();
+  return ["interpolate", ["linear"], deltaExpr(p),
+    -RAMP_CLAMP, t.rust, 0, t.neutral, RAMP_CLAMP, t.teal];
+}
+function underlayOpacity(p) {
+  // faint grey for stable settlement, scaled by end-year count, capped low
+  return ["interpolate", ["linear"], ["coalesce", ["get", p.to], 0],
+    0, 0, 4, 0.15, 200, 0.35];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Map                                                                        */
+/* -------------------------------------------------------------------------- */
+if (window.pmtiles && window.maplibregl) {
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+}
+
+const fromHash = readHash();
+if (fromHash && PERIODS[fromHash.period]) state.period = fromHash.period;
+if (fromHash && fromHash.example) state.example = fromHash.example;
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: "style.json",
+  center: fromHash ? fromHash.center : HOME.center,
+  zoom: fromHash ? fromHash.zoom : HOME.zoom,
+  minZoom: 3,
+  maxZoom: 15,
+  attributionControl: false,
+  hash: false,            // we manage the hash ourselves (it also carries period)
+  dragRotate: false,
+  pitchWithRotate: false,
+});
+
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+map.addControl(new maplibregl.AttributionControl({
+  compact: true,
+  customAttribution: [
+    "Building change © Google Open Buildings Temporal (CC BY 4.0)",
+    "Boundaries © Natural Earth",
+  ],
+}), "bottom-right");
+
+// Attribution: sit it below the zoom controls, collapsed by default (the ⓘ
+// toggles it). MapLibre adds it above the nav group and starts it open, so
+// move it to the end of the corner stack and clear the open state.
+(() => {
+  const corner = map.getContainer().querySelector(".maplibregl-ctrl-bottom-right");
+  const attrib = corner && corner.querySelector(".maplibregl-ctrl-attrib");
+  if (!attrib) return;
+  corner.appendChild(attrib);
+  attrib.removeAttribute("open");
+  attrib.classList.remove("maplibregl-compact-show");
+})();
+
+map.on("load", () => {
+  applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
+  loadData();
+  loadTowns();
+  if (state.example) selectExample(state.example, { instant: true });
+  writeHash();
+});
+
+map.on("moveend", writeHash);
+map.on("error", (e) => console.warn("map error:", e && e.error ? e.error.message : e));
+
+// Follow the OS light/dark preference at runtime (matches the CSS chrome).
+themeQuery.addEventListener("change", () => { if (map.isStyleLoaded()) applyTheme(); });
+
+function applyTheme() {
+  const t = theme();
+  if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.land);
+  if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
+  if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
+  if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-color", t.underlay);
+  applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
+  map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Data (settlement-change aggregates)                                        */
+/* -------------------------------------------------------------------------- */
+function loadData() {
+  const banner = document.getElementById("data-banner");
+  if (!DATA_URL) {
+    banner.querySelector("span").textContent =
+      "Settlement-change data isn’t published yet — this is the viewer shell. " +
+      "The map shows reference boundaries; the switch, legend and places preview the finished layout.";
+    banner.hidden = false;
+    return;
+  }
+  banner.hidden = true;
+  if (DATA_IS_PMTILES) {
+    // Replace the empty placeholder source with the vector tileset.
+    ["underlay", "change-fill"].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource("aggregates")) map.removeSource("aggregates");
+    map.addSource("aggregates", { type: "vector", url: "pmtiles://" + DATA_URL });
+    // NOTE: a vector tileset needs "source-layer" on each layer; add via
+    // addLayer here once the tileset's layer name is known from the build.
+    console.warn("PMTiles path: add vector layers with source-layer (see build output).");
+  } else {
+    fetch(DATA_URL)
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then((geojson) => map.getSource("aggregates").setData(geojson))
+      .catch((err) => console.warn("could not load", DATA_URL, err));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Period switch                                                              */
+/* -------------------------------------------------------------------------- */
+function buildSwitch() {
+  const box = document.getElementById("period-switch");
+  Object.entries(PERIODS).forEach(([key, p]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(key === state.period));
+    b.dataset.period = key;
+    b.textContent = p.label;
+    b.addEventListener("click", () => applyPeriod(key));
+    box.appendChild(b);
+  });
+}
+
+function applyPeriod(key, opts = {}) {
+  if (!PERIODS[key]) return;
+  state.period = key;
+  const p = PERIODS[key];
+  if (map.getLayer("change-fill")) map.setPaintProperty("change-fill", "fill-color", changeColor(p));
+  if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-opacity", underlayOpacity(p));
+  document.querySelectorAll("#period-switch button").forEach((b) =>
+    b.setAttribute("aria-checked", String(b.dataset.period === key)));
+  document.getElementById("legend-title").textContent =
+    `Change in buildings per 1.2 km cell, ${p.label.replace("→", "–")}`;
+  if (!opts.silent) writeHash();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Example places                                                             */
+/* -------------------------------------------------------------------------- */
+let EXAMPLES = [];
+
+function loadExamples() {
+  fetch("data/examples.json")
+    .then((r) => r.json())
+    .then((data) => { EXAMPLES = data.examples || []; renderCards(); })
+    .catch((err) => console.warn("could not load examples.json", err));
+}
+
+function renderCards() {
+  const box = document.getElementById("cards");
+  box.innerHTML = "";
+  EXAMPLES.forEach((ex) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "place";
+    b.dataset.id = ex.id;
+    b.setAttribute("aria-current", String(ex.id === state.example));
+    const driver = ex.driver ? `<span class="tag ${ex.driver}">${ex.driver}</span>` : "";
+    const unver = ex.verified ? "" : `<span class="unverified">unverified</span>`;
+    b.innerHTML =
+      `<span class="place-name">${ex.name}${unver}</span>` +
+      `<span class="place-cap">${ex.caption}</span>${driver}`;
+    b.addEventListener("click", () => selectExample(ex.id));
+    box.appendChild(b);
+  });
+}
+
+function selectExample(id, opts = {}) {
+  const ex = EXAMPLES.find((e) => e.id === id);
+  if (!ex) return;
+  state.example = id;
+  if (ex.period && PERIODS[ex.period]) applyPeriod(ex.period, { silent: true });
+  const camera = { center: [ex.lon, ex.lat], zoom: ex.zoom || 12 };
+  if (opts.instant || REDUCED) map.jumpTo(camera);
+  else map.flyTo({ ...camera, speed: 0.9, essential: true });
+  document.querySelectorAll(".place").forEach((b) =>
+    b.setAttribute("aria-current", String(b.dataset.id === id)));
+  writeHash();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Town labels — DOM markers (system fonts, no glyph PBFs required)           */
+/* -------------------------------------------------------------------------- */
+function loadTowns() {
+  fetch("data/towns.geojson")
+    .then((r) => r.json())
+    .then((fc) => {
+      (fc.features || []).forEach((f) => {
+        const el = document.createElement("div");
+        el.className = "town";
+        el.textContent = f.properties.name;
+        new maplibregl.Marker({ element: el, anchor: "left" })
+          .setLngLat(f.geometry.coordinates)
+          .addTo(map);
+      });
+    })
+    .catch((err) => console.warn("could not load towns.geojson", err));
+}
+
+/* -------------------------------------------------------------------------- */
+/* URL hash state:  #p/<period>/<zoom>/<lat>/<lng>[/<exampleId>]              */
+/* -------------------------------------------------------------------------- */
+function readHash() {
+  const parts = location.hash.replace(/^#/, "").split("/");
+  if (parts[0] !== "p" || parts.length < 5) return null;
+  const zoom = parseFloat(parts[2]), lat = parseFloat(parts[3]), lng = parseFloat(parts[4]);
+  if ([zoom, lat, lng].some(Number.isNaN)) return null;
+  return { period: parts[1], zoom, center: [lng, lat], example: parts[5] || null };
+}
+
+function writeHash() {
+  const c = map.getCenter();
+  const parts = ["p", state.period, map.getZoom().toFixed(2), c.lat.toFixed(4), c.lng.toFixed(4)];
+  if (state.example) parts.push(state.example);
+  const h = "#" + parts.join("/");
+  // replaceState updates the URL WITHOUT firing hashchange, so this never
+  // re-enters the listener below (no guard needed). The listener therefore
+  // only runs for genuine hash changes: manual URL edits and back/forward.
+  if (h !== location.hash) history.replaceState(null, "", h);
+}
+
+window.addEventListener("hashchange", () => {
+  const h = readHash();
+  if (!h) return;
+  if (PERIODS[h.period]) applyPeriod(h.period, { silent: true });
+  state.example = h.example || null;
+  document.querySelectorAll(".place").forEach((b) =>
+    b.setAttribute("aria-current", String(b.dataset.id === state.example)));
+  map.jumpTo({ center: h.center, zoom: h.zoom });
+});
+
+/* -------------------------------------------------------------------------- */
+/* UI chrome: drawer, about dialog, banner                                    */
+/* -------------------------------------------------------------------------- */
+function wireChrome() {
+  const drawer = document.getElementById("drawer");
+  const toggle = document.getElementById("drawer-toggle");
+  const setDrawer = (open) => {
+    drawer.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.hidden = open;
+  };
+  toggle.addEventListener("click", () => setDrawer(true));
+  document.getElementById("drawer-close").addEventListener("click", () => setDrawer(false));
+
+  const about = document.getElementById("about");
+  document.getElementById("about-open").addEventListener("click", () => (about.hidden = false));
+  document.getElementById("about-close").addEventListener("click", () => (about.hidden = true));
+  about.addEventListener("click", (e) => { if (e.target === about) about.hidden = true; });
+
+  document.getElementById("banner-close").addEventListener("click", () =>
+    (document.getElementById("data-banner").hidden = true));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { about.hidden = true; setDrawer(false); }
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Boot                                                                       */
+/* -------------------------------------------------------------------------- */
+buildSwitch();
+loadExamples();
+wireChrome();

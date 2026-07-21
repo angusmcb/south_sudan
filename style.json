@@ -1,0 +1,67 @@
+{
+  "version": 8,
+  "name": "SSD settlement change",
+  "metadata": {
+    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. Palette, ramp midpoint and layer order live here; app.js swaps the change-fill colour expression per period at runtime (setPaintProperty). No glyphs/sprite: town labels are DOM markers (system fonts, zero font bytes), so there are no symbol/icon layers. The 'aggregates' source ships empty; the build publishes per-year building counts (c2016, c2018, ...) as feature attributes that app.js differences into the diverging ramp."
+  },
+  "sources": {
+    "admin": {
+      "type": "geojson",
+      "data": "data/admin_boundaries_ssd.geojson",
+      "attribution": "Boundaries © Natural Earth (public domain)"
+    },
+    "aggregates": {
+      "type": "geojson",
+      "data": { "type": "FeatureCollection", "features": [] },
+      "attribution": "Building change © Google Open Buildings Temporal (CC BY 4.0)"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#EFEDE3" }
+    },
+    {
+      "id": "underlay",
+      "type": "fill",
+      "source": "aggregates",
+      "paint": {
+        "fill-color": "#C9C4B2",
+        "fill-opacity": 0,
+        "fill-antialias": false
+      }
+    },
+    {
+      "id": "change-fill",
+      "type": "fill",
+      "source": "aggregates",
+      "paint": {
+        "fill-color": "#E8E6DB",
+        "fill-opacity": 0.92,
+        "fill-antialias": false
+      }
+    },
+    {
+      "id": "admin-land",
+      "type": "line",
+      "source": "admin",
+      "filter": ["==", ["get", "kind"], "land"],
+      "paint": {
+        "line-color": "#B7BAAC",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6]
+      }
+    },
+    {
+      "id": "admin-disputed",
+      "type": "line",
+      "source": "admin",
+      "filter": ["==", ["get", "kind"], "disputed"],
+      "paint": {
+        "line-color": "#B7BAAC",
+        "line-dasharray": [2, 2],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6]
+      }
+    }
+  ]
+}
