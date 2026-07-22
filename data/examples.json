@@ -1,5 +1,5 @@
 {
-  "_comment": "Example-card locations for the settlement-change viewer. verified:false is deliberate — docs/viewer_design.md §2 requires each location be checked against the published rasters before it is presented as evidence. The settlement-change layer is not published yet, so none can be verified; these preview the layout and the driver tags (conflict / flood / arrivals / growth). Coordinates are approximate town centres. period is 'war' (2016->2018) or 'post' (2019->2023). The sources support the described historical event or driver, but do not verify the settlement-change raster.",
+  "_comment": "Example-area locations for the settlement-change viewer. verified:false is deliberate — docs/viewer_design.md §2 requires each location be checked against the published rasters before it is presented as evidence. The Yei pilot is published, but the nationwide examples remain outside its coverage and unverified; they preview the layout and driver tags (conflict / flood / arrivals / growth). Coordinates are approximate town centres. period is 'war' (2016->2018) or 'post' (2019->2023). The sources support the described historical event or driver, but do not verify the settlement-change raster.",
   "examples": [
     {
       "id": "malakal",

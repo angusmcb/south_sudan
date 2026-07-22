@@ -5,9 +5,9 @@
  * fly to example places, keep all
  * view state in the URL hash. No build step, no framework.
  *
- * The settlement-change layer is not published yet, so DATA_URL is null and the
- * 'aggregates' source stays empty; the shell, switch, legend and places all work
- * against it. When tiles land, point DATA_URL at the release (see loadData). */
+ * The Yei evidence is fetched as sparse PMTiles from public GCS. Tile RGB is
+ * data (loss/gain/stable), not colour: the custom evidence protocol applies the
+ * current browser theme before MapLibre receives each raster tile. */
 
 "use strict";
 
@@ -29,26 +29,14 @@ const THEME = {
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
 
-// ---- data source ----
-// The first data run is deliberately limited to Yei.  Every pYYYY attribute
-// is thresholded 4 m built-pixel coverage in parts per ten thousand, not a
-// building count.  The GeoJSON aggregates are retained for the later national
-// overview. The Yei pilot downloads two categorical change surfaces packed
-// into one lossless WebP;
-// no palette is baked into the data files.
-const DATA_URL = "data/yei_presence_v0.geojson";
-const DETAIL_URL = "data/yei_change.json";
-// National builds publish PMTiles as release assets on the public bucket:
-//   const DATA_URL = "https://<public-bucket>/releases/<id>/tiles/aggregates.pmtiles";
-// For PMTiles, set DATA_IS_PMTILES = true (swaps the source instead of setData).
-const DATA_IS_PMTILES = false;
+// ---- data source: immutable public release, raw evidence styled below ----
+const TILE_RELEASE_URL =
+  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/yei-v3/tiles";
 
-// ---- periods: the switch and every colour read these ----
-// Coverage is stored per year; switching periods differences the same source
-// in the paint expression, without a tile refetch.
+// ---- periods: each immutable archive shares the same RGB evidence contract ----
 const PERIODS = {
-  war: { label: "War 2016→18", from: "p2016", to: "p2018" },
-  post: { label: "Post-agreement 2019→23", from: "p2019", to: "p2023" },
+  war: { label: "War 2016→18", from: "p2016", to: "p2018", archive: "war.pmtiles" },
+  post: { label: "Post-agreement 2019→23", from: "p2019", to: "p2023", archive: "post.pmtiles" },
 };
 const DEFAULT_PERIOD = "war";
 
@@ -56,54 +44,7 @@ const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [30.68, 4.09], zoom: 10.3 };
 
 const state = { period: DEFAULT_PERIOD, example: null };
-const DETAIL_TIERS = [
-  { name: "regional", factor: 128, minzoom: 5.5, maxzoom: 8.6,
-    opacity: [5.5, 0.88, 8.0, 0.88, 8.6, 0] },
-  { name: "local", factor: 32, minzoom: 7.8, maxzoom: 10.0,
-    opacity: [7.8, 0, 8.3, 0.9, 9.5, 0.9, 10.0, 0] },
-  { name: "settlement", factor: 16, minzoom: 9.3, maxzoom: 12.5,
-    opacity: [9.3, 0, 9.8, 0.92, 12.0, 0.92, 12.5, 0] },
-  { name: "neighbourhood", factor: 4, minzoom: 11.8, maxzoom: 14.5,
-    opacity: [11.8, 0, 12.3, 0.92, 14.0, 0.92, 14.5, 0] },
-  { name: "detail", factor: 1, minzoom: 13.8, maxzoom: 16,
-    opacity: [13.8, 0, 14.3, 0.92, 16, 0.92] },
-];
-let detailState = null;
-
-/* -------------------------------------------------------------------------- */
-/* Ramp / colour — thresholded built-coverage change in percentage points.     */
-/* RAMP_CLAMP is parts per ten thousand: 100 means one percentage point.       */
-/* The Yei pilot will set this from the observed coverage-change distribution. */
-/* -------------------------------------------------------------------------- */
-const RAMP_CLAMP = 100;
-const AGGREGATE_LAYERS = {
-  underlay: ["underlay", "underlay-block"],
-  change: ["change-fill", "change-fill-block"],
-};
-
-function deltaExpr(p) {
-  return ["-", ["coalesce", ["get", p.to], 0], ["coalesce", ["get", p.from], 0]];
-}
-function changeColor(p) {
-  const t = theme();
-  return ["interpolate", ["linear"], deltaExpr(p),
-    -RAMP_CLAMP, t.rust, 0, t.neutral, RAMP_CLAMP, t.teal];
-}
-function underlayOpacity(p, layerId) {
-  // faint grey for stable built coverage, capped low
-  const coverageOpacity = ["interpolate", ["linear"], ["coalesce", ["get", p.to], 0],
-    0, 0, 10, 0.12, 500, 0.35];
-  // The Yei-only pilot covers only part of one 12 km global block.  Do not
-  // let that partial aggregate read as a giant national-scale pixel.
-  return layerId === "underlay-block"
-    ? ["interpolate", ["linear"], ["zoom"], 8.5, 0, 9, coverageOpacity]
-    : coverageOpacity;
-}
-function changeOpacity(layerId) {
-  return layerId === "change-fill-block"
-    ? ["interpolate", ["linear"], ["zoom"], 8.5, 0, 9, 0.92]
-    : 0.92;
-}
+let evidenceState = null;
 
 /* -------------------------------------------------------------------------- */
 /* Map                                                                        */
@@ -111,6 +52,26 @@ function changeOpacity(layerId) {
 if (window.pmtiles && window.maplibregl) {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
+  const archives = new Map(Object.entries(PERIODS).map(([period, spec]) => [
+    period, new pmtiles.PMTiles(`${TILE_RELEASE_URL}/${spec.archive}`),
+  ]));
+  const styledCache = new Map();
+
+  maplibregl.addProtocol("evidence", async (params, abortController) => {
+    const match = params.url.match(/^evidence:\/\/(war|post)\/(\d+)\/(\d+)\/(\d+)/);
+    if (!match) throw new Error(`invalid evidence URL: ${params.url}`);
+    const [, period, z, x, y] = match;
+    const themeName = themeQuery.matches ? "dark" : "light";
+    const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
+    if (styledCache.has(cacheKey)) return { data: styledCache.get(cacheKey) };
+    const response = await archives.get(period).getZxy(
+      Number(z), Number(x), Number(y), abortController.signal);
+    if (!response) return { data: null };
+    const data = await styleEvidenceTile(response.data, Number(z));
+    styledCache.set(cacheKey, data);
+    if (styledCache.size > 256) styledCache.delete(styledCache.keys().next().value);
+    return { data, cacheControl: response.cacheControl, expires: response.expires };
+  });
 }
 
 const fromHash = readHash();
@@ -127,7 +88,7 @@ const map = new maplibregl.Map({
   // bounds hug Africa, so maxBounds is what actually halts zoom-out and
   // keeps panning on the continent; minZoom is just a hard floor behind it.
   minZoom: 2.2,
-  maxZoom: 15,
+  maxZoom: 16.5,
   maxBounds: [[-26, -36], [57, 38]],
   attributionControl: false,
   hash: false,            // we manage the hash ourselves (it also carries period)
@@ -158,8 +119,7 @@ map.addControl(new maplibregl.AttributionControl({
 
 map.on("load", () => {
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
-  loadData();
-  loadDetail();
+  loadEvidence(state.period);
   loadTowns();
   ensurePlaceBoxes();           // examples.json may already be in (fetch races the style)
   if (state.example) selectExample(state.example, { instant: true });
@@ -179,155 +139,83 @@ function applyTheme() {
   if (map.getLayer("africa-coast")) map.setPaintProperty("africa-coast", "line-color", t.coast);
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
-  AGGREGATE_LAYERS.underlay.forEach((id) => {
-    if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", t.underlay);
-  });
   if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
   if (map.getLayer("place-box-glow")) map.setPaintProperty("place-box-glow", "line-color", t.box);
   if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
-  if (detailState) renderDetailSources();         // raw change stays unchanged; browser palette changes
+  loadEvidence(state.period);                     // recolour cached raw evidence for the new theme
   map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
 }
 
-/* -------------------------------------------------------------------------- */
-/* Data (settlement-change aggregates)                                        */
-/* -------------------------------------------------------------------------- */
-function loadData() {
-  if (!DATA_URL) return;                     // no settlement-change layer published yet
-  if (DATA_IS_PMTILES) {
-    // Replace the empty placeholder source with the vector tileset.
-    [...AGGREGATE_LAYERS.underlay, ...AGGREGATE_LAYERS.change]
-      .forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
-    if (map.getSource("aggregates")) map.removeSource("aggregates");
-    map.addSource("aggregates", { type: "vector", url: "pmtiles://" + DATA_URL });
-    // NOTE: a vector tileset needs "source-layer" on each layer; add via
-    // addLayer here once the tileset's layer name is known from the build.
-    console.warn("PMTiles path: add vector layers with source-layer (see build output).");
-  } else {
-    fetch(DATA_URL)
-      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then((geojson) => map.getSource("aggregates").setData(geojson))
-      .catch((err) => console.warn("could not load", DATA_URL, err));
-  }
-}
-
-async function readPackedChanges(url, width, height, periods) {
-  const image = new Image();
-  image.src = url;
-  await image.decode();
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  context.drawImage(image, 0, 0, width, height);
-  const rgba = context.getImageData(0, 0, width, height).data;
-  const surfaces = Object.fromEntries(Object.keys(periods).map((period) =>
-    [period, new Int8Array(width * height)]));
-  for (let index = 0; index < width * height; index += 1) {
-    const packed = rgba[index * 4];
-    for (const [period, spec] of Object.entries(periods)) {
-      const category = Math.floor(packed / (3 ** spec.base3_digit)) % 3;
-      surfaces[period][index] = category === 1 ? -1 : category === 2 ? 1 : 0;
-    }
-  }
-  return surfaces;
+async function canvasPngBytes(canvas) {
+  const blob = await new Promise((resolve, reject) => canvas.toBlob(
+    (value) => value ? resolve(value) : reject(new Error("PNG encoding failed")), "image/png"));
+  return new Uint8Array(await blob.arrayBuffer());
 }
 
 function hexRgb(hex) {
   return [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
 }
 
-function styledChangeUrl(change, width, height, factor) {
-  const outWidth = Math.ceil(width / factor);
-  const outHeight = Math.ceil(height / factor);
-  const signedSum = new Int32Array(outWidth * outHeight);
-  const absoluteSum = new Uint32Array(outWidth * outHeight);
-  for (let y = 0; y < height; y += 1) {
-    const outRow = Math.floor(y / factor) * outWidth;
-    const row = y * width;
-    for (let x = 0; x < width; x += 1) {
-      const index = row + x;
-      const outIndex = outRow + Math.floor(x / factor);
-      const delta = change[index];
-      if (!delta) continue;
-      signedSum[outIndex] += delta;
-      absoluteSum[outIndex] += Math.abs(delta);
-    }
-  }
+function changeAlphaFloor(zoom) {
+  if (zoom <= 11) return 35;
+  return ({ 12: 70, 13: 100, 14: 140, 15: 180 }[zoom] || 235);
+}
 
+async function styleEvidenceTile(rawBytes, zoom) {
+  const bitmap = await createImageBitmap(new Blob([rawBytes], { type: "image/webp" }));
   const canvas = document.createElement("canvas");
-  canvas.width = outWidth;
-  canvas.height = outHeight;
-  const context = canvas.getContext("2d");
-  const pixels = context.createImageData(outWidth, outHeight);
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  const image = context.getImageData(0, 0, canvas.width, canvas.height);
   const t = theme();
-  const rust = hexRgb(t.rust);
-  const teal = hexRgb(t.teal);
-  const mixed = hexRgb(t.mixed);
-  for (let index = 0; index < absoluteSum.length; index += 1) {
-    if (!absoluteSum[index]) continue;
-    // Hue is net direction; opacity is changed-building evidence. Crucially,
-    // neither is divided by all (mostly empty) land cells in the block.
-    // Keep the dominant direction saturated. Interpolating toward the land
-    // colour when loss and gain nearly cancel would make abundant sparse
-    // change disappear again. An exact tie uses the visible mixed-change grey.
-    const rgb = signedSum[index] < 0 ? rust : signedSum[index] > 0 ? teal : mixed;
-    const evidence = absoluteSum[index]; // significant changed 4 m cells; never divide by empty land
-    const alpha = factor === 1
-      ? 225
-      : Math.max(45, Math.round(235 * (1 - Math.exp(-evidence / 3))));
-    pixels.data.set([...rgb, alpha], index * 4);
-  }
-  context.putImageData(pixels, 0, 0);
-  return canvas.toDataURL("image/png");
-}
-
-async function loadDetail() {
-  try {
-    const response = await fetch(DETAIL_URL);
-    if (!response.ok) throw new Error(response.status);
-    const manifest = await response.json();
-    const [width, height] = manifest.dimensions;
-    const base = new URL(DETAIL_URL, window.location.href);
-    const surfaces = await readPackedChanges(
-      new URL(manifest.file, base).href, width, height, manifest.periods);
-    detailState = { manifest, surfaces, width, height };
-    renderDetailSources();
-    applyDetailPeriod(state.period);
-  } catch (error) {
-    console.warn("could not load", DETAIL_URL, error);
-  }
-}
-
-function renderDetailSources() {
-  const { manifest, surfaces, width, height } = detailState;
-  for (const period of Object.keys(manifest.periods)) {
-    for (const tier of DETAIL_TIERS) {
-      const id = `detail-${period}-${tier.name}`;
-      const url = styledChangeUrl(surfaces[period], width, height, tier.factor);
-      if (map.getSource(id)) {
-        map.getSource(id).updateImage({ url, coordinates: manifest.coordinates });
-        continue;
-      }
-      map.addSource(id, { type: "image", url, coordinates: manifest.coordinates });
-      map.addLayer({
-        id, type: "raster", source: id, minzoom: tier.minzoom, maxzoom: tier.maxzoom,
-        paint: {
-          "raster-opacity": ["interpolate", ["linear"], ["zoom"], ...tier.opacity],
-          "raster-resampling": tier.factor === 1 ? "nearest" : "linear",
-        },
-      }, "rivers");
+  const rust = hexRgb(t.rust), teal = hexRgb(t.teal);
+  const mixed = hexRgb(t.mixed), stableColour = hexRgb(t.underlay);
+  for (let offset = 0; offset < image.data.length; offset += 4) {
+    const loss = image.data[offset], gain = image.data[offset + 1];
+    const stable = image.data[offset + 2];
+    if (loss || gain) {
+      const colour = loss === gain ? mixed : loss > gain ? rust : teal;
+      const floor = changeAlphaFloor(zoom);
+      const evidence = Math.max(loss, gain) / 255;
+      image.data[offset] = colour[0];
+      image.data[offset + 1] = colour[1];
+      image.data[offset + 2] = colour[2];
+      image.data[offset + 3] = Math.round(floor + (235 - floor) * evidence);
+    } else if (stable) {
+      image.data[offset] = stableColour[0];
+      image.data[offset + 1] = stableColour[1];
+      image.data[offset + 2] = stableColour[2];
+      image.data[offset + 3] = Math.round(64 * stable / 255);
+    } else {
+      image.data[offset + 3] = 0;
     }
   }
-  applyDetailPeriod(state.period);
+  context.putImageData(image, 0, 0);
+  return canvasPngBytes(canvas);
 }
 
-function applyDetailPeriod(period) {
-  Object.keys(PERIODS).forEach((key) => DETAIL_TIERS.forEach((tier) => {
-    const id = `detail-${key}-${tier.name}`;
-    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", key === period ? "visible" : "none");
-  }));
+function loadEvidence(period) {
+  if (!map.isStyleLoaded() || !PERIODS[period]) return;
+  const themeName = themeQuery.matches ? "dark" : "light";
+  if (evidenceState && evidenceState.period === period && evidenceState.theme === themeName) return;
+  if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
+  if (map.getSource("building-evidence")) map.removeSource("building-evidence");
+  map.addSource("building-evidence", {
+    type: "raster", tileSize: 256, minzoom: 6, maxzoom: 16,
+    bounds: [30.658107982351044, 4.046116927870562, 30.70154027992287, 4.111325662710322],
+    tiles: [`evidence://${period}/{z}/{x}/{y}?theme=${themeName}`],
+    attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
+  });
+  map.addLayer({
+    id: "building-evidence", type: "raster", source: "building-evidence",
+    minzoom: 6, maxzoom: 16.5,
+    paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" },
+  }, "rivers");
+  evidenceState = { period, theme: themeName };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -350,15 +238,7 @@ function buildSwitch() {
 function applyPeriod(key, opts = {}) {
   if (!PERIODS[key]) return;
   state.period = key;
-  const p = PERIODS[key];
-  AGGREGATE_LAYERS.change.forEach((id) => {
-    if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", changeColor(p));
-    if (map.getLayer(id)) map.setPaintProperty(id, "fill-opacity", changeOpacity(id));
-  });
-  AGGREGATE_LAYERS.underlay.forEach((id) => {
-    if (map.getLayer(id)) map.setPaintProperty(id, "fill-opacity", underlayOpacity(p, id));
-  });
-  applyDetailPeriod(key);
+  loadEvidence(key);
   applyPlaceFilter();                       // boxes belong to one epoch each
   document.querySelectorAll("#period-switch button").forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.period === key)));
@@ -373,7 +253,12 @@ let EXAMPLES = [];
 function loadExamples() {
   fetch("data/examples.json")
     .then((r) => r.json())
-    .then((data) => { EXAMPLES = data.examples || []; renderCards(); ensurePlaceBoxes(); })
+    .then((data) => {
+      EXAMPLES = data.examples || [];
+      renderCards();
+      ensurePlaceBoxes();
+      if (state.example) selectExample(state.example, { instant: true });
+    })
     .catch((err) => console.warn("could not load examples.json", err));
 }
 
@@ -490,6 +375,54 @@ function selectExample(id, opts = {}) {
   else map.flyTo({ ...camera, speed: 0.9, essential: true });
   document.querySelectorAll(".place").forEach((b) =>
     b.setAttribute("aria-current", String(b.dataset.id === id)));
+  renderAreaCard(ex);
+  writeHash();
+}
+
+function renderAreaCard(ex) {
+  const card = document.getElementById("area-card");
+  document.getElementById("area-period").textContent =
+    PERIODS[ex.period] ? PERIODS[ex.period].label : "Selected area";
+  document.getElementById("area-name").textContent = ex.name;
+  document.getElementById("area-caption").textContent = ex.caption || "";
+
+  const driver = document.getElementById("area-driver");
+  driver.textContent = ex.driver || "context";
+  driver.className = `tag ${ex.driver || ""}`.trim();
+  document.getElementById("area-status").textContent =
+    ex.verified ? "checked against the published raster" : "context not yet raster-verified";
+
+  const note = document.getElementById("area-note");
+  note.textContent = ex.note || "";
+  note.hidden = !ex.note;
+
+  const sources = document.getElementById("area-sources");
+  sources.replaceChildren();
+  (ex.sources || []).forEach((source) => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = source.link;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = source.title;
+    const byline = document.createElement("span");
+    byline.className = "source-byline";
+    byline.textContent = [source.author, source.year].filter(Boolean).join(", ");
+    item.append(link, byline);
+    sources.appendChild(item);
+  });
+  if (!sources.children.length) {
+    const item = document.createElement("li");
+    item.textContent = "No area-specific sources listed.";
+    sources.appendChild(item);
+  }
+  card.hidden = false;
+}
+
+function clearExample() {
+  state.example = null;
+  document.getElementById("area-card").hidden = true;
+  document.querySelectorAll(".place").forEach((b) => b.setAttribute("aria-current", "false"));
   writeHash();
 }
 
@@ -549,6 +482,9 @@ window.addEventListener("hashchange", () => {
   state.example = h.example || null;
   document.querySelectorAll(".place").forEach((b) =>
     b.setAttribute("aria-current", String(b.dataset.id === state.example)));
+  const ex = EXAMPLES.find((candidate) => candidate.id === state.example);
+  if (ex) renderAreaCard(ex);
+  else document.getElementById("area-card").hidden = true;
   map.jumpTo({ center: h.center, zoom: h.zoom });
 });
 
@@ -565,6 +501,7 @@ function wireChrome() {
   };
   toggle.addEventListener("click", () => setDrawer(true));
   document.getElementById("drawer-close").addEventListener("click", () => setDrawer(false));
+  document.getElementById("area-close").addEventListener("click", clearExample);
 
   const about = document.getElementById("about");
   document.getElementById("about-open").addEventListener("click", () => (about.hidden = false));

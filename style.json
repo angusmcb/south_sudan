@@ -2,7 +2,7 @@
   "version": 8,
   "name": "SSD settlement change",
   "metadata": {
-    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. The Yei pilot publishes deadbanded categorical change packed into one lossless WebP; app.js accumulates sparse change evidence and styles zoom-aware raster tiers. Its pYYYY GeoJSON aggregates are retained provisionally."
+    "ssd:note": "Committed MapLibre base style. app.js adds the public Yei loss/gain/stable PMTiles raster at runtime and styles its raw evidence channels in the browser."
   },
   "sources": {
     "admin": {

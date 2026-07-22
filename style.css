@@ -63,19 +63,35 @@ html, body {
   backdrop-filter: blur(6px);
 }
 
-.titlecard {
+.area-card {
   top: 14px; left: 14px;
-  max-width: 310px;
-  padding: 14px 16px;
+  width: 340px; max-width: calc(100vw - 28px);
+  max-height: calc(100vh - 200px);
+  padding: 14px 38px 14px 16px;
+  overflow-y: auto;
 }
-.titlecard h1 {
-  margin: 0 0 6px;
-  font-size: 18px;
+.area-card h2 {
+  margin: 1px 0 5px;
+  font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
-.titlecard .strap { margin: 0 0 8px; font-size: 12.5px; color: var(--label); }
+.area-card h3 {
+  margin: 12px 0 5px; font-size: 10.5px; color: var(--label);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.area-close { position: absolute; top: 9px; right: 9px; }
+.area-period { font-size: 10.5px; font-weight: 650; color: var(--teal); text-transform: uppercase; letter-spacing: 0.04em; }
+.area-caption { margin: 0; font-size: 12.5px; }
+.area-meta { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+.area-meta .tag { margin-top: 0; }
+.area-status { font-size: 10.5px; color: var(--label); font-style: italic; }
+.area-note { margin: 9px 0 0; font-size: 11.5px; color: var(--label); }
+.area-sources { margin: 0; padding-left: 17px; }
+.area-sources li { margin: 0 0 6px; font-size: 11.5px; line-height: 1.35; }
+.area-sources a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.area-sources .source-byline { display: block; color: var(--label); font-size: 10.5px; }
 
 .linkish {
   border: 0; background: none; padding: 0;
@@ -200,10 +216,13 @@ html, body {
 
 /* ---- mobile: a clean vertical stack, no overlapping controls ---- */
 @media (max-width: 640px) {
-  /* top row: compact title (never reaches the Places button) + Places */
-  .titlecard { top: 12px; left: 12px; max-width: calc(100vw - 108px); padding: 10px 12px; }
-  .titlecard h1 { font-size: 15px; }
-  .titlecard .strap { display: none; }               /* full text lives in About */
+  /* top row: selected-area information + Places */
+  .area-card {
+    top: 12px; left: 12px; width: calc(100vw - 108px); max-width: none;
+    max-height: calc(100vh - 218px); padding: 11px 34px 11px 12px;
+  }
+  .area-card h2 { font-size: 15px; }
+  .area-sources li { font-size: 11px; }
   .drawer-toggle { top: 12px; right: 12px; padding: 8px 12px; }
 
   /* period switch: bottom-centre (thumb zone) */

@@ -15,12 +15,20 @@
 <body>
   <div id="map" aria-label="Map of settlement change in South Sudan"></div>
 
-  <!-- Title / strapline -->
-  <header class="card titlecard" id="titlecard">
-    <h1>South&nbsp;Sudan — Settlement&nbsp;Change</h1>
-    <p class="strap">Thresholded satellite-derived built footprint — Yei pilot</p>
-    <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
-  </header>
+  <!-- Appears only when an example area is selected. -->
+  <aside class="card area-card" id="area-card" hidden aria-live="polite" aria-labelledby="area-name">
+    <button class="icon-btn area-close" id="area-close" aria-label="Clear selected area">✕</button>
+    <div class="area-period" id="area-period"></div>
+    <h2 id="area-name"></h2>
+    <p class="area-caption" id="area-caption"></p>
+    <div class="area-meta">
+      <span class="tag" id="area-driver"></span>
+      <span class="area-status" id="area-status"></span>
+    </div>
+    <p class="area-note" id="area-note" hidden></p>
+    <h3>Sources</h3>
+    <ul class="area-sources" id="area-sources"></ul>
+  </aside>
 
   <!-- Period switch -->
   <div class="card period-switch" role="radiogroup" aria-label="Time period" id="period-switch">
@@ -34,7 +42,7 @@
       aria-label="Diverging colour ramp from rust (built area lost) through grey (mixed loss and gain) to teal (built area gained)">
     </div>
     <div class="legend-ends"><span>Lost</span><span>Mixed</span><span>Gained</span></div>
-    <div class="legend-foot">Blank means no significant change; grey aggregates balance loss and gain.</div>
+    <div class="legend-foot">Faint grey shows stable buildings; darker grey balances loss and gain; blank is empty.</div>
     <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
   </aside>
 
@@ -62,7 +70,8 @@
         percentage, spatially matched within 4&nbsp;m, then differenced. Only changes
         of at least 30 percentage points are retained and styled in your browser. Change is aggregated as
         the map zooms out and resolves to sparse 4&nbsp;m loss/gain pixels when
-        zoomed in. Stable and empty pixels are transparent. It does not estimate a building count. Whether a
+        zoomed in. Stable buildings appear as a quiet grey underlay; empty pixels are transparent.
+        It does not estimate a building count. Whether a
         change reflects displacement, return, flooding, or ordinary growth is the
         interpretation carried by the labelled places, not by the colour alone.</p>
       <p>Two periods are shown, split at the 2018 revitalised peace agreement:

@@ -1,58 +1,63 @@
 # viewer/ — public settlement-change web map
 
-The deployable static site, exactly as GitHub Pages serves it (see
-`docs/viewer_design.md`). No build step, no framework: `index.html` + `style.css`
-+ `app.js` + a committed MapLibre `style.json`, with MapLibre GL and PMTiles
-vendored under `vendor/`.
+The deployable static site, exactly as GitHub Pages serves it. It uses vanilla
+JavaScript, MapLibre GL and the vendored PMTiles client; there is no bundler or
+application server.
 
 ## Run locally
 
-Any static server (the map fetches `style.json`, `data/*`, so `file://` is
-flaky in some browsers — use a server):
-
 ```bash
-python3 -m http.server -d viewer 8000   # then open http://localhost:8000/
+python3 -m http.server -d viewer 8000
 ```
 
-## Status
+Then open `http://localhost:8000/`. `file://` is unsupported because the map
+loads JSON and PMTiles with HTTP requests.
 
-The first data run is a **Yei-only presence pilot**. Once generated with the
-command below, `data/yei_change.webp` contains both periods as categorical
-loss / none / gain surfaces. Open Buildings presence is first quantized to
-uint8 percentage, spatially matched within 4 m, differenced, and subjected to
-a 30-percentage-point deadband. The browser styles the result and accumulates
-changed-cell evidence into 512 m, 128 m, 64 m and 16 m overview tiers before the
-native 4 m tier appears. `data/yei_presence_v0.geojson`
-is retained as the reproducible aggregate input for a later national overview.
-It is intentionally not a national map or a building-count product.
+## Current data
 
-```bash
-uv run python scripts/build_viewer.py
+The viewer reads the public zoom-normalised Yei v3 release directly from:
+
+```text
+https://storage.googleapis.com/south-sudan-buildings-tiles/
+  releases/yei-v3/tiles/war.pmtiles
+  releases/yei-v3/tiles/post.pmtiles
 ```
 
-That command also writes the reproducible private source copies to
-`gs://humanitarian_buildings/viewer/pilots/`. Use
-`--upload-blob ''` only for a local, non-published test.
+The bucket permits anonymous reads and cross-origin `GET`/`HEAD` range
+requests. Its policy is reproduced by `config/viewer_bucket_cors.json`.
 
-## Wiring in data when it lands
+Each lossless WebP tile contains data channels rather than final colours:
 
-`app.js`, top of file:
+- R: significant building-presence loss evidence;
+- G: significant gain evidence;
+- B: unchanged/stable building evidence.
 
-- **Yei v0 (packed significant change)** — `DETAIL_URL = "data/yei_change.json"`.
-  The manifest records georeferencing, deadband, spatial tolerance and the
-  packed WebP encoding. The browser applies the active palette and selects a
-  progressively aggregated raster tier as zoom changes.
-- **Yei aggregate input** — `DATA_URL = "data/yei_presence_v0.geojson"`.
-  Features carry fixed-point annual thresholded coverage (`p2016`, `p2018`,
-  `p2019`, `p2023`) for the future overview layer.
-- **National PMTiles (release asset on the public bucket)** — set `DATA_URL` to
-  the release URL and `DATA_IS_PMTILES = true`, then add the vector layers with
-  their `source-layer` name (printed by the build).
+`app.js` retrieves sparse tiles through the PMTiles client, decodes the WebP,
+applies the active light/dark palette and hands a transparent styled PNG to
+MapLibre. At z6–15 the channels are saturating aggregates that preserve sparse
+change; z16 is binary building-scale detail. The aggregate saturation is
+constant through z13 and scales with pixel area at z14–15, while the browser
+raises the minimum opacity of nonzero change toward detail. Dense changed
+settlements therefore retain visual strength as their internal gaps appear.
+Stable buildings use a quiet grey underlay.
 
-The colour ramp is deliberately provisional and lives in one place
-(`changeColor` / `RAMP_CLAMP` in `app.js`); `100` equals one percentage point
-of built-pixel coverage.
+The map has no persistent title card: the legend carries the product identity.
+Selecting a labelled area opens a top-left information card with the period,
+context statement, verification status, and linked area-specific sources.
 
-Build inputs (uint8-percent presence → significant signed change) are produced by
-`scripts/build_viewer.py` over `src/ssd_rs/viewer/`. Generated tiles are release
-assets and are **not** committed here.
+## Building and publishing a period
+
+First produce a three-band evidence COG with `scripts/export_viewer_ee.py`
+(Open Buildings) or `scripts/prepare_viewer_evidence.py` (model presence COGs).
+On the CPU tile VM run, for example:
+
+```bash
+python scripts/build_viewer_tiles.py evidence-war.tif war.pmtiles \
+  --pmtiles-bin "$HOME/bin/pmtiles" \
+  --publish-release yei-v3 --publish-period war
+```
+
+The builder verifies the archive before publishing. `--public-bucket` defaults
+to `south-sudan-buildings-tiles`; publication uses immutable cache headers and
+refuses to overwrite an existing release object. Update `TILE_RELEASE_URL` in
+`app.js` only after all periods and manifests for the release are present.
