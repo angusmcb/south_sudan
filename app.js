@@ -16,10 +16,14 @@
 // the same OS signal, so the two stay in step. dark.neutral == dark.land so
 // "no change" dissolves into the map (docs §4 rule) in both themes.
 const THEME = {
-  light: { land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2",
-           water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60" },
-  dark:  { land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27",
-           water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294" },
+  light: {
+    land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2",
+    water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60"
+  },
+  dark: {
+    land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27",
+    water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294"
+  },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
@@ -37,7 +41,7 @@ const DATA_IS_PMTILES = false;
 // Counts are stored per-year as feature attributes (c2016, c2018, …); Δ is
 // computed here, so switching period is a paint change with no tile refetch.
 const PERIODS = {
-  war:  { label: "War 2016→18",          from: "c2016", to: "c2018" },
+  war: { label: "War 2016→18", from: "c2016", to: "c2018" },
   post: { label: "Post-agreement 2019→23", from: "c2019", to: "c2023" },
 };
 const DEFAULT_PERIOD = "war";
@@ -138,8 +142,8 @@ themeQuery.addEventListener("change", () => { if (map.isStyleLoaded()) applyThem
 
 function applyTheme() {
   const t = theme();
-  if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.water);
-  if (map.getLayer("africa-fill")) map.setPaintProperty("africa-fill", "fill-color", t.land);
+  if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.land);
+  if (map.getLayer("africa-mask")) map.setPaintProperty("africa-fill", "fill-color", t.water);
   if (map.getLayer("africa-coast")) map.setPaintProperty("africa-coast", "line-color", t.coast);
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
@@ -197,8 +201,6 @@ function applyPeriod(key, opts = {}) {
   applyPlaceFilter();                       // boxes belong to one epoch each
   document.querySelectorAll("#period-switch button").forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.period === key)));
-  document.getElementById("legend-title").textContent =
-    `Change in buildings per 1.2 km cell, ${p.label.replace("→", "–")}`;
   if (!opts.silent) writeHash();
 }
 
@@ -240,8 +242,10 @@ function ensurePlaceBoxes() {
   const t = theme();
   // Only the current epoch's boxes live in the source (swapped in applyPlaceFilter
   // via setData) — a hard re-tile, so switching epochs never ghosts an old box.
-  map.addSource("places", { type: "geojson",
-    data: { type: "FeatureCollection", features: placeBoxFeatures(state.period) } });
+  map.addSource("places", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: placeBoxFeatures(state.period) }
+  });
   // Invisible fill: no tint on the interior (it stays whatever the map shows),
   // but fully transparent fills still register hover/click, so it's the hit area.
   map.addLayer({
@@ -252,9 +256,11 @@ function ensurePlaceBoxes() {
   map.addLayer({
     id: "place-box-line", type: "line", source: "places", minzoom: 4.4,
     layout: { "line-join": "round" },
-    paint: { "line-color": t.box, "line-dasharray": [3, 2.5],
+    paint: {
+      "line-color": t.box, "line-dasharray": [3, 2.5],
       "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2.0, 1.4],
-      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.5] },
+      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.5]
+    },
   });
 
   let hovered = null;

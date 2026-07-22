@@ -10,9 +10,9 @@
       "data": "data/admin_boundaries_ssd.geojson",
       "attribution": "Boundaries & rivers © Natural Earth (public domain)"
     },
-    "africa": {
+    "africa-mask": {
       "type": "geojson",
-      "data": "data/africa.geojson"
+      "data": "data/africa-mask.geojson"
     },
     "rivers": {
       "type": "geojson",
@@ -20,7 +20,10 @@
     },
     "aggregates": {
       "type": "geojson",
-      "data": { "type": "FeatureCollection", "features": [] },
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      },
       "attribution": "Building change © Google Open Buildings Temporal (CC BY 4.0)"
     }
   },
@@ -28,24 +31,38 @@
     {
       "id": "background",
       "type": "background",
-      "paint": { "background-color": "#D9DCD6" }
+      "paint": {
+        "background-color": "#EFEDE3"
+      }
     },
     {
-      "id": "africa-fill",
+      "id": "africa-mask",
       "type": "fill",
-      "source": "africa",
+      "source": "africa-mask",
       "paint": {
-        "fill-color": "#EFEDE3",
+        "fill-color": "#D9DCD6",
         "fill-antialias": false
       }
     },
     {
       "id": "africa-coast",
       "type": "line",
-      "source": "africa",
+      "source": "africa-mask",
       "paint": {
         "line-color": "#C4C7BC",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 2.5, 0.5, 6, 0.8]
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          2.5,
+          0.5,
+          6,
+          0.8
+        ]
       }
     },
     {
@@ -73,32 +90,106 @@
       "type": "line",
       "source": "rivers",
       "minzoom": 5,
-      "layout": { "line-cap": "round", "line-join": "round" },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
       "paint": {
         "line-color": "#8FB4BE",
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0, 6, 0.85],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 6, 1.0, 9, 1.8, 12, 3.0]
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0,
+          6,
+          0.85
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          1.0,
+          9,
+          1.8,
+          12,
+          3.0
+        ]
       }
     },
     {
       "id": "admin-land",
       "type": "line",
       "source": "admin",
-      "filter": ["==", ["get", "kind"], "land"],
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "land"
+      ],
       "paint": {
         "line-color": "#B7BAAC",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6]
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          0.6,
+          8,
+          1.0,
+          12,
+          1.6
+        ]
       }
     },
     {
       "id": "admin-disputed",
       "type": "line",
       "source": "admin",
-      "filter": ["==", ["get", "kind"], "disputed"],
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "disputed"
+      ],
       "paint": {
         "line-color": "#B7BAAC",
-        "line-dasharray": [2, 2],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6]
+        "line-dasharray": [
+          2,
+          2
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          0.6,
+          8,
+          1.0,
+          12,
+          1.6
+        ]
       }
     }
   ]
