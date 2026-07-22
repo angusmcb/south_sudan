@@ -166,8 +166,8 @@ function hexRgb(hex) {
 }
 
 function changeAlphaFloor(zoom) {
-  if (zoom <= 11) return 35;
-  return ({ 12: 70, 13: 100, 14: 140, 15: 180 }[zoom] || 235);
+  if (zoom <= 10) return 35;
+  return ({ 11: 55, 12: 95, 13: 170, 14: 255 }[zoom] || 255);
 }
 
 function stableAlphaFloor(zoom) {
@@ -197,7 +197,7 @@ async function styleEvidenceTile(rawBytes, zoom) {
       image.data[offset] = colour[0];
       image.data[offset + 1] = colour[1];
       image.data[offset + 2] = colour[2];
-      image.data[offset + 3] = Math.round(floor + (235 - floor) * evidence);
+      image.data[offset + 3] = Math.round(floor + (255 - floor) * evidence);
     } else if (stable) {
       const floor = stableAlphaFloor(zoom);
       const evidence = stable / 255;
