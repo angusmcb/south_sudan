@@ -1,0 +1,78 @@
+{
+  "_comment": "Example-card locations for the settlement-change viewer. verified:false is deliberate — docs/viewer_design.md §2 requires each location be checked against the published rasters before it is presented as evidence. The settlement-change layer is not published yet, so none can be verified; these preview the layout and the driver tags (conflict / flood / arrivals / growth). Coordinates are approximate town centres. period is 'war' (2016->2018) or 'post' (2019->2023).",
+  "examples": [
+    {
+      "id": "malakal",
+      "name": "Malakal",
+      "caption": "Town emptied during the war; the UN protection site grows alongside it.",
+      "driver": "conflict",
+      "period": "war",
+      "lon": 31.655, "lat": 9.535, "zoom": 12,
+      "verified": false
+    },
+    {
+      "id": "leer",
+      "name": "Leer & Mayendit",
+      "caption": "Repeated razing of villages across Unity State, 2015–17.",
+      "driver": "conflict",
+      "period": "war",
+      "lon": 30.14, "lat": 8.30, "zoom": 11.5, "span_km": 34,
+      "verified": false
+    },
+    {
+      "id": "yei",
+      "name": "Yei",
+      "caption": "Mass departure in 2016–17 as fighting reached the town.",
+      "driver": "conflict",
+      "period": "war",
+      "lon": 30.68, "lat": 4.09, "zoom": 12,
+      "verified": false
+    },
+    {
+      "id": "wau",
+      "name": "Wau",
+      "caption": "Displacement into town and camps from 2016.",
+      "driver": "conflict",
+      "period": "war",
+      "lon": 27.99, "lat": 7.70, "zoom": 12,
+      "verified": false
+    },
+    {
+      "id": "juba",
+      "name": "Juba",
+      "caption": "The capital expands through the post-agreement years — growth, not displacement.",
+      "driver": "growth",
+      "period": "post",
+      "lon": 31.58, "lat": 4.86, "zoom": 11, "span_km": 20,
+      "verified": false
+    },
+    {
+      "id": "bentiu",
+      "name": "Bentiu",
+      "caption": "Protection-site growth, then severe flooding in 2021–22.",
+      "driver": "flood",
+      "period": "post",
+      "lon": 29.79, "lat": 9.26, "zoom": 12,
+      "verified": false
+    },
+    {
+      "id": "fangak",
+      "name": "Old Fangak (Sudd)",
+      "caption": "Sustained flooding along the Sudd margins from 2020.",
+      "driver": "flood",
+      "period": "post",
+      "lon": 30.75, "lat": 9.42, "zoom": 11.5, "span_km": 28,
+      "verified": false
+    },
+    {
+      "id": "renk",
+      "name": "Renk",
+      "caption": "Arrivals from Sudan after 2023 — beyond the 2016–2023 data; a headline case for the model's own epochs.",
+      "driver": "arrivals",
+      "period": "post",
+      "lon": 32.79, "lat": 11.75, "zoom": 12,
+      "verified": false,
+      "note": "Outside current OBT range (2016–2023); shown as a placeholder for future model epochs."
+    }
+  ]
+}

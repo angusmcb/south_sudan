@@ -17,9 +17,9 @@
 // "no change" dissolves into the map (docs §4 rule) in both themes.
 const THEME = {
   light: { land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2",
-           africa: "#E8E6DB", river: "#B6C2BC", box: "#646A60" },
+           water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60" },
   dark:  { land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27",
-           africa: "#1A1E1A", river: "#33403B", box: "#9BA294" },
+           water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294" },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
@@ -138,15 +138,14 @@ themeQuery.addEventListener("change", () => { if (map.isStyleLoaded()) applyThem
 
 function applyTheme() {
   const t = theme();
-  if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.land);
+  if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.water);
+  if (map.getLayer("africa-fill")) map.setPaintProperty("africa-fill", "fill-color", t.land);
+  if (map.getLayer("africa-coast")) map.setPaintProperty("africa-coast", "line-color", t.coast);
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
   if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-color", t.underlay);
-  if (map.getLayer("africa-fill")) map.setPaintProperty("africa-fill", "fill-color", t.africa);
-  if (map.getLayer("africa-lines")) map.setPaintProperty("africa-lines", "line-color", t.admin);
   if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
   if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
-  if (map.getLayer("place-box-fill")) map.setPaintProperty("place-box-fill", "fill-color", t.box);
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
   map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
 }
@@ -155,15 +154,7 @@ function applyTheme() {
 /* Data (settlement-change aggregates)                                        */
 /* -------------------------------------------------------------------------- */
 function loadData() {
-  const banner = document.getElementById("data-banner");
-  if (!DATA_URL) {
-    banner.querySelector("span").textContent =
-      "Settlement-change data isn’t published yet — this is the viewer shell. " +
-      "The map shows reference boundaries; the switch, legend and places preview the finished layout.";
-    banner.hidden = false;
-    return;
-  }
-  banner.hidden = true;
+  if (!DATA_URL) return;                     // no settlement-change layer published yet
   if (DATA_IS_PMTILES) {
     // Replace the empty placeholder source with the vector tileset.
     ["underlay", "change-fill"].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
@@ -226,38 +217,45 @@ function loadExamples() {
 /* Place boxes: a subtle dashed rectangle around each example, shown only when
  * its epoch is selected (the filter is applied in applyPeriod). They invite a
  * click without shouting: label-grey, low opacity, brightening on hover. */
-function placeBoxFeatures() {
-  return EXAMPLES.map((ex, i) => {
-    const span = ex.span_km || 14;                       // box edge length, km
-    const dLat = span / 2 / 110.6;
-    const dLon = span / 2 / (111.32 * Math.cos((ex.lat * Math.PI) / 180));
-    const [w, e, s, n] = [ex.lon - dLon, ex.lon + dLon, ex.lat - dLat, ex.lat + dLat];
-    return {
-      type: "Feature",
-      id: i,                                             // numeric id for feature-state hover
-      properties: { id: ex.id, period: ex.period || "war" },
-      geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
-    };
-  });
+function placeBoxFeatures(period) {
+  return EXAMPLES
+    .map((ex, i) => ({ ex, i }))
+    .filter(({ ex }) => !period || (ex.period || "war") === period)
+    .map(({ ex, i }) => {
+      const span = ex.span_km || 14;                     // box edge length, km
+      const dLat = span / 2 / 110.6;
+      const dLon = span / 2 / (111.32 * Math.cos((ex.lat * Math.PI) / 180));
+      const [w, e, s, n] = [ex.lon - dLon, ex.lon + dLon, ex.lat - dLat, ex.lat + dLat];
+      return {
+        type: "Feature",
+        id: i,                                           // stable numeric id (EXAMPLES index) for hover
+        properties: { id: ex.id },
+        geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+      };
+    });
 }
 
 function ensurePlaceBoxes() {
   if (!EXAMPLES.length || !map.getLayer("admin-land") || map.getSource("places")) return;
   const t = theme();
+  // Only the current epoch's boxes live in the source (swapped in applyPlaceFilter
+  // via setData) — a hard re-tile, so switching epochs never ghosts an old box.
   map.addSource("places", { type: "geojson",
-    data: { type: "FeatureCollection", features: placeBoxFeatures() } });
+    data: { type: "FeatureCollection", features: placeBoxFeatures(state.period) } });
+  // Invisible fill: no tint on the interior (it stays whatever the map shows),
+  // but fully transparent fills still register hover/click, so it's the hit area.
   map.addLayer({
     id: "place-box-fill", type: "fill", source: "places", minzoom: 4.4,
-    paint: { "fill-color": t.box,
-      "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.10, 0.04] },
+    paint: { "fill-color": t.box, "fill-opacity": 0 },
   });
+  // Only the dashed outline is drawn; it brightens/thickens on hover.
   map.addLayer({
     id: "place-box-line", type: "line", source: "places", minzoom: 4.4,
     layout: { "line-join": "round" },
-    paint: { "line-color": t.box, "line-dasharray": [3, 2.5], "line-width": 1.4,
-      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.55] },
+    paint: { "line-color": t.box, "line-dasharray": [3, 2.5],
+      "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2.0, 1.4],
+      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.5] },
   });
-  applyPlaceFilter();
 
   let hovered = null;
   map.on("mousemove", "place-box-fill", (e) => {
@@ -279,9 +277,10 @@ function ensurePlaceBoxes() {
 }
 
 function applyPlaceFilter() {
-  const filter = ["==", ["get", "period"], state.period];
-  if (map.getLayer("place-box-fill")) map.setFilter("place-box-fill", filter);
-  if (map.getLayer("place-box-line")) map.setFilter("place-box-line", filter);
+  const src = map.getSource("places");
+  if (!src) return;
+  src.setData({ type: "FeatureCollection", features: placeBoxFeatures(state.period) });
+  map.triggerRepaint();
 }
 
 function renderCards() {
@@ -323,14 +322,22 @@ function loadTowns() {
   fetch("data/towns.geojson")
     .then((r) => r.json())
     .then((fc) => {
-      (fc.features || []).forEach((f) => {
+      const markers = (fc.features || []).map((f) => {
         const el = document.createElement("div");
         el.className = "town";
         el.textContent = f.properties.name;
         new maplibregl.Marker({ element: el, anchor: "left" })
           .setLngLat(f.geometry.coordinates)
           .addTo(map);
+        return { el, minzoom: f.properties.minzoom || 0 };
       });
+      // Tiered labels: main towns always show; extras fade in when zoomed in.
+      const updateTowns = () => {
+        const z = map.getZoom();
+        markers.forEach((t) => { t.el.style.display = z >= t.minzoom ? "" : "none"; });
+      };
+      updateTowns();
+      map.on("zoom", updateTowns);
     })
     .catch((err) => console.warn("could not load towns.geojson", err));
 }
@@ -368,7 +375,7 @@ window.addEventListener("hashchange", () => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* UI chrome: drawer, about dialog, banner                                    */
+/* UI chrome: drawer, about dialog                                            */
 /* -------------------------------------------------------------------------- */
 function wireChrome() {
   const drawer = document.getElementById("drawer");
@@ -385,9 +392,6 @@ function wireChrome() {
   document.getElementById("about-open").addEventListener("click", () => (about.hidden = false));
   document.getElementById("about-close").addEventListener("click", () => (about.hidden = true));
   about.addEventListener("click", (e) => { if (e.target === about) about.hidden = true; });
-
-  document.getElementById("banner-close").addEventListener("click", () =>
-    (document.getElementById("data-banner").hidden = true));
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { about.hidden = true; setDrawer(false); }

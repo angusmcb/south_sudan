@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "_comment": "Orientation town labels, rendered as DOM markers by app.js (no glyph PBFs). 'minzoom' tiers them: main towns (0) show always; extras (7) fade in when zoomed in. Approximate coordinates; not authoritative.",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Juba",      "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [31.582, 4.859] } },
+    { "type": "Feature", "properties": { "name": "Wau",       "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [27.989, 7.702] } },
+    { "type": "Feature", "properties": { "name": "Malakal",   "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [31.655, 9.535] } },
+    { "type": "Feature", "properties": { "name": "Bentiu",    "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [29.790, 9.263] } },
+    { "type": "Feature", "properties": { "name": "Bor",       "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [31.558, 6.207] } },
+    { "type": "Feature", "properties": { "name": "Yei",       "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [30.677, 4.090] } },
+    { "type": "Feature", "properties": { "name": "Aweil",     "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [27.400, 8.767] } },
+    { "type": "Feature", "properties": { "name": "Rumbek",    "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [29.677, 6.802] } },
+    { "type": "Feature", "properties": { "name": "Torit",     "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [32.567, 4.412] } },
+    { "type": "Feature", "properties": { "name": "Kuajok",    "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [28.231, 8.311] } },
+    { "type": "Feature", "properties": { "name": "Yambio",    "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [28.395, 4.571] } },
+    { "type": "Feature", "properties": { "name": "Renk",      "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [32.793, 11.751] } },
+    { "type": "Feature", "properties": { "name": "Akobo",     "minzoom": 0 }, "geometry": { "type": "Point", "coordinates": [33.015, 7.789] } },
+    { "type": "Feature", "properties": { "name": "Kajo Keji", "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [31.657, 3.854] } },
+    { "type": "Feature", "properties": { "name": "Pibor",     "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [33.133, 6.798] } },
+    { "type": "Feature", "properties": { "name": "Kapoeta",   "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [33.591, 4.774] } },
+    { "type": "Feature", "properties": { "name": "Nimule",    "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [32.049, 3.599] } },
+    { "type": "Feature", "properties": { "name": "Nasir",     "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [33.067, 8.609] } },
+    { "type": "Feature", "properties": { "name": "Maridi",    "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [29.472, 4.917] } },
+    { "type": "Feature", "properties": { "name": "Tonj",      "minzoom": 7 }, "geometry": { "type": "Point", "coordinates": [28.680, 7.276] } }
+  ]
+}

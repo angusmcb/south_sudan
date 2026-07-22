@@ -37,7 +37,7 @@
 }
 
 * { box-sizing: border-box; }
-/* class rules that set display (.modal-backdrop, .banner) would otherwise
+/* class rules that set display (e.g. .modal-backdrop) would otherwise
    beat the UA [hidden] rule; keep [hidden] authoritative. */
 [hidden] { display: none !important; }
 
@@ -173,16 +173,6 @@ html, body {
   border-radius: 50%; background: var(--label); vertical-align: middle;
 }
 
-/* ---- data-status banner ---- */
-.banner {
-  position: absolute; z-index: 6; left: 50%; bottom: 22px; transform: translateX(-50%);
-  max-width: min(560px, calc(100vw - 28px));
-  display: flex; gap: 10px; align-items: center;
-  background: var(--card-bg); border: 1px solid var(--card-line);
-  border-radius: var(--radius); box-shadow: var(--shadow);
-  padding: 9px 12px; font-size: 12.5px; color: var(--ink);
-}
-
 /* ---- icon buttons / dialog ---- */
 .icon-btn {
   border: 0; background: none; cursor: pointer; color: var(--label);
@@ -215,10 +205,6 @@ html, body {
   .titlecard h1 { font-size: 15px; }
   .titlecard .strap { display: none; }               /* full text lives in About */
   .drawer-toggle { top: 12px; right: 12px; padding: 8px 12px; }
-
-  /* status banner: full-width notice clear of the two-line title card */
-  .banner { top: 116px; bottom: auto; left: 12px; right: 12px; transform: none;
-            max-width: none; }
 
   /* period switch: bottom-centre (thumb zone) */
   .period-switch { top: auto; bottom: 14px; left: 50%; transform: translateX(-50%); }

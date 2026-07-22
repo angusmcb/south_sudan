@@ -2,7 +2,7 @@
   "version": 8,
   "name": "SSD settlement change",
   "metadata": {
-    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. Palette, ramp midpoint and layer order live here; app.js swaps the change-fill colour expression per period at runtime (setPaintProperty) and retints layers for dark mode. No glyphs/sprite: town labels are DOM markers (system fonts, zero font bytes), so there are no symbol/icon layers. The 'aggregates' source ships empty; the build publishes per-year building counts (c2016, c2018, ...) as feature attributes that app.js differences into the diverging ramp. The 'places' source (epoch-linked example boxes) is built at runtime from data/examples.json. Africa context: NE 110m countries tinted at the ramp-neutral tone so the continent silhouette reads while no-change data still dissolves into land (docs §4 rule); the 110m outlines hand over to the local 50m boundary above z7. Rivers: NE 10m centerlines clipped to the Nile/SSD window, in the doc's grey water tone (never saturated blue — docs §4 trap)."
+    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. Palette, ramp midpoint and layer order live here; app.js swaps the change-fill colour expression per period at runtime (setPaintProperty) and retints layers for dark mode. No glyphs/sprite: town labels are DOM markers (system fonts, zero font bytes), so there are no symbol/icon layers. The 'aggregates' source ships empty; the build publishes per-year building counts (c2016, c2018, ...) as feature attributes that app.js differences into the diverging ramp. The 'places' source (epoch-linked example boxes) is built at runtime from data/examples.json. Africa context: the continent is a single DISSOLVED silhouette (NE 110m country polys unioned — no internal borders, so nothing doubles up with SSD's own 50m boundary). It reads via a land/ocean tone difference (ocean = background water tone; land = ramp-neutral) plus a hairline coastline; only South Sudan carries an actual boundary line, keeping the emphasis on SSD. Rivers: NE 10m centerlines, SSD Nile network only, in a cooler water tone (distinct from the warm boundary grey; never saturated blue — docs §4 trap) and only from mid-zoom so the continental view stays clean."
   },
   "sources": {
     "admin": {
@@ -28,15 +28,24 @@
     {
       "id": "background",
       "type": "background",
-      "paint": { "background-color": "#EFEDE3" }
+      "paint": { "background-color": "#D9DCD6" }
     },
     {
       "id": "africa-fill",
       "type": "fill",
       "source": "africa",
       "paint": {
-        "fill-color": "#E8E6DB",
+        "fill-color": "#EFEDE3",
         "fill-antialias": false
+      }
+    },
+    {
+      "id": "africa-coast",
+      "type": "line",
+      "source": "africa",
+      "paint": {
+        "line-color": "#C4C7BC",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 2.5, 0.5, 6, 0.8]
       }
     },
     {
@@ -63,22 +72,12 @@
       "id": "rivers",
       "type": "line",
       "source": "rivers",
-      "minzoom": 3,
+      "minzoom": 5,
       "layout": { "line-cap": "round", "line-join": "round" },
       "paint": {
-        "line-color": "#B6C2BC",
-        "line-opacity": 0.8,
-        "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.5, 8, 1.2, 12, 2.2]
-      }
-    },
-    {
-      "id": "africa-lines",
-      "type": "line",
-      "source": "africa",
-      "maxzoom": 7,
-      "paint": {
-        "line-color": "#B7BAAC",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 2.5, 0.4, 6, 0.8]
+        "line-color": "#8FB4BE",
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0, 6, 0.85],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 6, 1.0, 9, 1.8, 12, 3.0]
       }
     },
     {
