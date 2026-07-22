@@ -5,8 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
   <title>South Sudan — Settlement Change</title>
-  <meta name="description"
-    content="A fast, public map of change in building counts across South Sudan, 2016–2023. Buildings are used as a proxy for where people live." />
+  <meta name="description" content="A pilot map of thresholded built-area change around Yei, South Sudan, 2016–2023." />
   <!-- Vendored, self-hosted. Relative paths only: the site is served from a
        subpath (…github.io/ssd_rs/), so a leading slash would break. -->
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
@@ -19,7 +18,7 @@
   <!-- Title / strapline -->
   <header class="card titlecard" id="titlecard">
     <h1>South&nbsp;Sudan — Settlement&nbsp;Change</h1>
-    <p class="strap">Satellite-derived buildings in South Sudan</p>
+    <p class="strap">Thresholded satellite-derived built footprint — Yei pilot</p>
     <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
   </header>
 
@@ -30,12 +29,13 @@
 
   <!-- Legend -->
   <aside class="card legend" id="legend" aria-label="Legend">
-    <div class="legend-title" id="legend-title">Building Change</div>
+    <div class="legend-title" id="legend-title">South Sudan Settlement Change</div>
     <div class="legend-ramp" role="img"
-      aria-label="Diverging colour ramp from rust (buildings lost) through neutral (no change) to teal (buildings gained)">
+      aria-label="Diverging colour ramp from rust (built area lost) through neutral (no change) to teal (built area gained)">
     </div>
     <div class="legend-ends"><span>Lost</span><span>No change</span><span>Gained</span></div>
-    <div class="legend-foot">Grey shows stable settlement; blank is unsettled land.</div>
+    <div class="legend-foot">Grey shows stable built area; blank is unsettled land. </div>
+    <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
   </aside>
 
   <!-- Places drawer -->
@@ -57,10 +57,10 @@
     <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
       <button class="icon-btn modal-close" id="about-close" aria-label="Close">✕</button>
       <h2 id="about-title">About this map</h2>
-      <p>The unit shown is the <strong>change in building counts</strong> between two
-        years, per 1.2&nbsp;km cell. Settlement in South Sudan is dominated by tukuls,
-        so building counts are used as a measurable <em>proxy</em> for where people
-        live — but the map itself only claims buildings gained or lost. Whether a
+      <p>The Yei pilot shows the <strong>change in thresholded built-area coverage</strong>
+        between two years. Presence is mean-pooled to 4&nbsp;m, thresholded at 0.3,
+        then averaged over 1.2&nbsp;km cells (and 12&nbsp;km blocks when zoomed out).
+        It does not estimate a building count. Whether a
         change reflects displacement, return, flooding, or ordinary growth is the
         interpretation carried by the labelled places, not by the colour alone.</p>
       <p>Two periods are shown, split at the 2018 revitalised peace agreement:

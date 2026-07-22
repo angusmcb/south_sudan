@@ -2,7 +2,7 @@
   "version": 8,
   "name": "SSD settlement change",
   "metadata": {
-    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. Palette, ramp midpoint and layer order live here; app.js swaps the change-fill colour expression per period at runtime (setPaintProperty) and retints layers for dark mode. No glyphs/sprite: town labels are DOM markers (system fonts, zero font bytes), so there are no symbol/icon layers. The 'aggregates' source ships empty; the build publishes per-year building counts (c2016, c2018, ...) as feature attributes that app.js differences into the diverging ramp. The 'places' source (epoch-linked example boxes) is built at runtime from data/examples.json. Africa context: the continent is a single DISSOLVED silhouette (NE 110m country polys unioned — no internal borders, so nothing doubles up with SSD's own 50m boundary). It reads via a land/ocean tone difference (ocean = background water tone; land = ramp-neutral) plus a hairline coastline; only South Sudan carries an actual boundary line, keeping the emphasis on SSD. Rivers: NE 10m centerlines, SSD Nile network only, in a cooler water tone (distinct from the warm boundary grey; never saturated blue — docs §4 trap) and only from mid-zoom so the continental view stays clean."
+    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. The Yei pilot publishes thresholded 4 m building-presence coverage as per-year p2016/p2018/p2019/p2023 attributes in parts per ten thousand; app.js differences them at runtime. Blocks preserve that density at z4-8 and frozen 1200 m patches show from z9."
   },
   "sources": {
     "admin": {
@@ -66,9 +66,35 @@
       }
     },
     {
+      "id": "underlay-block",
+      "type": "fill",
+      "source": "aggregates",
+      "maxzoom": 9,
+      "filter": ["==", ["get", "kind"], "block"],
+      "paint": {
+        "fill-color": "#C9C4B2",
+        "fill-opacity": 0,
+        "fill-antialias": false
+      }
+    },
+    {
+      "id": "change-fill-block",
+      "type": "fill",
+      "source": "aggregates",
+      "maxzoom": 9,
+      "filter": ["==", ["get", "kind"], "block"],
+      "paint": {
+        "fill-color": "#E8E6DB",
+        "fill-opacity": 0.92,
+        "fill-antialias": false
+      }
+    },
+    {
       "id": "underlay",
       "type": "fill",
       "source": "aggregates",
+      "minzoom": 9,
+      "filter": ["==", ["get", "kind"], "patch"],
       "paint": {
         "fill-color": "#C9C4B2",
         "fill-opacity": 0,
@@ -79,6 +105,8 @@
       "id": "change-fill",
       "type": "fill",
       "source": "aggregates",
+      "minzoom": 9,
+      "filter": ["==", ["get", "kind"], "patch"],
       "paint": {
         "fill-color": "#E8E6DB",
         "fill-opacity": 0.92,

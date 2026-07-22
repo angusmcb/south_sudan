@@ -28,37 +28,40 @@ const THEME = {
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
 
-// ---- data source (null until settlement-change tiles are published) ----
-// v0 is a single GeoJSON of per-year building counts (docs §7 shortcut):
-//   const DATA_URL = "data/counts_v0.geojson";
+// ---- data source ----
+// The first data run is deliberately limited to Yei.  Every pYYYY attribute
+// is thresholded 4 m built-pixel coverage in parts per ten thousand, not a
+// building count.  The source also contains 12 km blocks for low zooms.
+const DATA_URL = "data/yei_presence_v0.geojson";
 // National builds publish PMTiles as release assets on the public bucket:
 //   const DATA_URL = "https://<public-bucket>/releases/<id>/tiles/aggregates.pmtiles";
 // For PMTiles, set DATA_IS_PMTILES = true (swaps the source instead of setData).
-const DATA_URL = null;
 const DATA_IS_PMTILES = false;
 
 // ---- periods: the switch and every colour read these ----
-// Counts are stored per-year as feature attributes (c2016, c2018, …); Δ is
-// computed here, so switching period is a paint change with no tile refetch.
+// Coverage is stored per year; switching periods differences the same source
+// in the paint expression, without a tile refetch.
 const PERIODS = {
-  war: { label: "War 2016→18", from: "c2016", to: "c2018" },
-  post: { label: "Post-agreement 2019→23", from: "c2019", to: "c2023" },
+  war: { label: "War 2016→18", from: "p2016", to: "p2018" },
+  post: { label: "Post-agreement 2019→23", from: "p2019", to: "p2023" },
 };
 const DEFAULT_PERIOD = "war";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const HOME = { center: [29.75, 7.5], zoom: 5.4 };
+const HOME = { center: [30.68, 4.09], zoom: 10.0 };
 
 const state = { period: DEFAULT_PERIOD, example: null };
 
 /* -------------------------------------------------------------------------- */
-/* Ramp / colour — the ONE place the change representation is decided.         */
-/* OPEN (docs §5): counts-Δ ramp vs thresholded-presence categories is not     */
-/* settled, and the linear stops below are placeholders. Set saturation from   */
-/* Δ percentiles over settled patches and a deadzone from the measured noise   */
-/* floor (the EE ramp sandbox exists for exactly this). Edit here only.        */
+/* Ramp / colour — thresholded built-coverage change in percentage points.     */
+/* RAMP_CLAMP is parts per ten thousand: 100 means one percentage point.       */
+/* The Yei pilot will set this from the observed coverage-change distribution. */
 /* -------------------------------------------------------------------------- */
-const RAMP_CLAMP = 50;          // Δ buildings at full rust / full teal (placeholder)
+const RAMP_CLAMP = 100;
+const AGGREGATE_LAYERS = {
+  underlay: ["underlay", "underlay-block"],
+  change: ["change-fill", "change-fill-block"],
+};
 
 function deltaExpr(p) {
   return ["-", ["coalesce", ["get", p.to], 0], ["coalesce", ["get", p.from], 0]];
@@ -69,9 +72,9 @@ function changeColor(p) {
     -RAMP_CLAMP, t.rust, 0, t.neutral, RAMP_CLAMP, t.teal];
 }
 function underlayOpacity(p) {
-  // faint grey for stable settlement, scaled by end-year count, capped low
+  // faint grey for stable built coverage, capped low
   return ["interpolate", ["linear"], ["coalesce", ["get", p.to], 0],
-    0, 0, 4, 0.15, 200, 0.35];
+    0, 0, 10, 0.12, 500, 0.35];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -143,12 +146,15 @@ themeQuery.addEventListener("change", () => { if (map.isStyleLoaded()) applyThem
 function applyTheme() {
   const t = theme();
   if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.land);
-  if (map.getLayer("africa-mask")) map.setPaintProperty("africa-fill", "fill-color", t.water);
+  if (map.getLayer("africa-mask")) map.setPaintProperty("africa-mask", "fill-color", t.water);
   if (map.getLayer("africa-coast")) map.setPaintProperty("africa-coast", "line-color", t.coast);
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
-  if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-color", t.underlay);
+  AGGREGATE_LAYERS.underlay.forEach((id) => {
+    if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", t.underlay);
+  });
   if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
+  if (map.getLayer("place-box-glow")) map.setPaintProperty("place-box-glow", "line-color", t.box);
   if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
   map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
@@ -161,7 +167,8 @@ function loadData() {
   if (!DATA_URL) return;                     // no settlement-change layer published yet
   if (DATA_IS_PMTILES) {
     // Replace the empty placeholder source with the vector tileset.
-    ["underlay", "change-fill"].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+    [...AGGREGATE_LAYERS.underlay, ...AGGREGATE_LAYERS.change]
+      .forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
     if (map.getSource("aggregates")) map.removeSource("aggregates");
     map.addSource("aggregates", { type: "vector", url: "pmtiles://" + DATA_URL });
     // NOTE: a vector tileset needs "source-layer" on each layer; add via
@@ -196,8 +203,12 @@ function applyPeriod(key, opts = {}) {
   if (!PERIODS[key]) return;
   state.period = key;
   const p = PERIODS[key];
-  if (map.getLayer("change-fill")) map.setPaintProperty("change-fill", "fill-color", changeColor(p));
-  if (map.getLayer("underlay")) map.setPaintProperty("underlay", "fill-opacity", underlayOpacity(p));
+  AGGREGATE_LAYERS.change.forEach((id) => {
+    if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", changeColor(p));
+  });
+  AGGREGATE_LAYERS.underlay.forEach((id) => {
+    if (map.getLayer(id)) map.setPaintProperty(id, "fill-opacity", underlayOpacity(p));
+  });
   applyPlaceFilter();                       // boxes belong to one epoch each
   document.querySelectorAll("#period-switch button").forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.period === key)));
@@ -252,14 +263,25 @@ function ensurePlaceBoxes() {
     id: "place-box-fill", type: "fill", source: "places", minzoom: 4.4,
     paint: { "fill-color": t.box, "fill-opacity": 0 },
   });
-  // Only the dashed outline is drawn; it brightens/thickens on hover.
+  // Glow: a wide, heavily-blurred halo under a soft core line (no dashes).
+  // Both brighten on hover so the box feels lit-up and clickable.
+  map.addLayer({
+    id: "place-box-glow", type: "line", source: "places", minzoom: 4.4,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": t.box,
+      "line-blur": ["interpolate", ["linear"], ["zoom"], 5, 4, 11, 13],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 5, 7, 11, 18],
+      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.85, 0.45]
+    },
+  });
   map.addLayer({
     id: "place-box-line", type: "line", source: "places", minzoom: 4.4,
-    layout: { "line-join": "round" },
+    layout: { "line-join": "round", "line-cap": "round" },
     paint: {
-      "line-color": t.box, "line-dasharray": [3, 2.5],
-      "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2.0, 1.4],
-      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.5]
+      "line-color": t.box, "line-blur": 0.6,
+      "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2.0, 1.3],
+      "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.6]
     },
   });
 
