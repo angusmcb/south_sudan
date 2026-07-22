@@ -9,7 +9,7 @@
   --ink:     #3A3F38;   /* body text */
   --label:   #646A60;   /* town labels */
   --rust:    #BC4F25;   /* buildings lost */
-  --neutral: #E8E6DB;   /* no change */
+  --neutral: #8F8A7B;   /* balanced loss/gain within an aggregate */
   --teal:    #2E7E72;   /* buildings gained */
   --card-bg: rgba(252, 251, 246, 0.92);
   --card-line: rgba(90, 96, 84, 0.18);
@@ -27,7 +27,7 @@
     --ink:     #D9D6CB;
     --label:   #A7AC9E;
     --rust:    #E06B3B;
-    --neutral: #5A5E54;   /* legend-ramp middle only; the map dissolves no-change (app.js) */
+    --neutral: #7A7F74;   /* balanced loss/gain within an aggregate */
     --teal:    #4AA894;
     --card-bg: rgba(24, 27, 23, 0.90);
     --card-line: rgba(200, 205, 190, 0.16);

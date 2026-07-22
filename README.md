@@ -16,26 +16,35 @@ python3 -m http.server -d viewer 8000   # then open http://localhost:8000/
 
 ## Status
 
-The first data run is a **Yei-only presence pilot**.  Once generated with the
-command below, `data/yei_presence_v0.geojson` supplies 4 m thresholded
-building-presence coverage, aggregated to 1200 m patches and 12 km blocks.
+The first data run is a **Yei-only presence pilot**. Once generated with the
+command below, `data/yei_change.webp` contains both periods as categorical
+loss / none / gain surfaces. Open Buildings presence is first quantized to
+uint8 percentage, spatially matched within 4 m, differenced, and subjected to
+a 30-percentage-point deadband. The browser styles the result and accumulates
+changed-cell evidence into 512 m, 128 m, 64 m and 16 m overview tiers before the
+native 4 m tier appears. `data/yei_presence_v0.geojson`
+is retained as the reproducible aggregate input for a later national overview.
 It is intentionally not a national map or a building-count product.
 
 ```bash
 uv run python scripts/build_viewer.py
 ```
 
-That command also writes the reproducible private source copy to
-`gs://humanitarian_buildings/viewer/pilots/yei_presence_v0.geojson`. Use
+That command also writes the reproducible private source copies to
+`gs://humanitarian_buildings/viewer/pilots/`. Use
 `--upload-blob ''` only for a local, non-published test.
 
 ## Wiring in data when it lands
 
 `app.js`, top of file:
 
-- **Yei v0 (single GeoJSON)** — `DATA_URL = "data/yei_presence_v0.geojson"`.
+- **Yei v0 (packed significant change)** — `DETAIL_URL = "data/yei_change.json"`.
+  The manifest records georeferencing, deadband, spatial tolerance and the
+  packed WebP encoding. The browser applies the active palette and selects a
+  progressively aggregated raster tier as zoom changes.
+- **Yei aggregate input** — `DATA_URL = "data/yei_presence_v0.geojson"`.
   Features carry fixed-point annual thresholded coverage (`p2016`, `p2018`,
-  `p2019`, `p2023`); the period switch differences them.
+  `p2019`, `p2023`) for the future overview layer.
 - **National PMTiles (release asset on the public bucket)** — set `DATA_URL` to
   the release URL and `DATA_IS_PMTILES = true`, then add the vector layers with
   their `source-layer` name (printed by the build).
@@ -44,6 +53,6 @@ The colour ramp is deliberately provisional and lives in one place
 (`changeColor` / `RAMP_CLAMP` in `app.js`); `100` equals one percentage point
 of built-pixel coverage.
 
-Build inputs (thresholded per-year presence → GeoJSON/PMTiles) are produced by
+Build inputs (uint8-percent presence → significant signed change) are produced by
 `scripts/build_viewer.py` over `src/ssd_rs/viewer/`. Generated tiles are release
 assets and are **not** committed here.

@@ -31,10 +31,10 @@
   <aside class="card legend" id="legend" aria-label="Legend">
     <div class="legend-title" id="legend-title">South Sudan Settlement Change</div>
     <div class="legend-ramp" role="img"
-      aria-label="Diverging colour ramp from rust (built area lost) through neutral (no change) to teal (built area gained)">
+      aria-label="Diverging colour ramp from rust (built area lost) through grey (mixed loss and gain) to teal (built area gained)">
     </div>
-    <div class="legend-ends"><span>Lost</span><span>No change</span><span>Gained</span></div>
-    <div class="legend-foot">Grey shows stable built area; blank is unsettled land. </div>
+    <div class="legend-ends"><span>Lost</span><span>Mixed</span><span>Gained</span></div>
+    <div class="legend-foot">Blank means no significant change; grey aggregates balance loss and gain.</div>
     <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
   </aside>
 
@@ -57,10 +57,12 @@
     <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
       <button class="icon-btn modal-close" id="about-close" aria-label="Close">✕</button>
       <h2 id="about-title">About this map</h2>
-      <p>The Yei pilot shows the <strong>change in thresholded built-area coverage</strong>
-        between two years. Presence is mean-pooled to 4&nbsp;m, thresholded at 0.3,
-        then averaged over 1.2&nbsp;km cells (and 12&nbsp;km blocks when zoomed out).
-        It does not estimate a building count. Whether a
+      <p>The Yei pilot shows <strong>significant change in building presence</strong>
+        between two years. Presence is mean-pooled to 4&nbsp;m, stored as integer
+        percentage, spatially matched within 4&nbsp;m, then differenced. Only changes
+        of at least 30 percentage points are retained and styled in your browser. Change is aggregated as
+        the map zooms out and resolves to sparse 4&nbsp;m loss/gain pixels when
+        zoomed in. Stable and empty pixels are transparent. It does not estimate a building count. Whether a
         change reflects displacement, return, flooding, or ordinary growth is the
         interpretation carried by the labelled places, not by the colour alone.</p>
       <p>Two periods are shown, split at the 2018 revitalised peace agreement:

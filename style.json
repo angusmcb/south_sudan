@@ -2,7 +2,7 @@
   "version": 8,
   "name": "SSD settlement change",
   "metadata": {
-    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. The Yei pilot publishes thresholded 4 m building-presence coverage as per-year p2016/p2018/p2019/p2023 attributes in parts per ten thousand; app.js differences them at runtime. Blocks preserve that density at z4-8 and frozen 1200 m patches show from z9."
+    "ssd:note": "Committed, diffable MapLibre style for the settlement-change viewer. The Yei pilot publishes deadbanded categorical change packed into one lossless WebP; app.js accumulates sparse change evidence and styles zoom-aware raster tiers. Its pYYYY GeoJSON aggregates are retained provisionally."
   },
   "sources": {
     "admin": {
@@ -69,6 +69,8 @@
       "id": "underlay-block",
       "type": "fill",
       "source": "aggregates",
+      "layout": {"visibility": "none"},
+      "minzoom": 8.5,
       "maxzoom": 9,
       "filter": ["==", ["get", "kind"], "block"],
       "paint": {
@@ -81,6 +83,8 @@
       "id": "change-fill-block",
       "type": "fill",
       "source": "aggregates",
+      "layout": {"visibility": "none"},
+      "minzoom": 8.5,
       "maxzoom": 9,
       "filter": ["==", ["get", "kind"], "block"],
       "paint": {
@@ -93,6 +97,7 @@
       "id": "underlay",
       "type": "fill",
       "source": "aggregates",
+      "layout": {"visibility": "none"},
       "minzoom": 9,
       "filter": ["==", ["get", "kind"], "patch"],
       "paint": {
@@ -105,6 +110,7 @@
       "id": "change-fill",
       "type": "fill",
       "source": "aggregates",
+      "layout": {"visibility": "none"},
       "minzoom": 9,
       "filter": ["==", ["get", "kind"], "patch"],
       "paint": {
