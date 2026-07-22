@@ -15,12 +15,12 @@ loads JSON and PMTiles with HTTP requests.
 
 ## Current data
 
-The viewer reads the public zoom-normalised Yei v3 release directly from:
+The viewer reads the public wider Yei sparse-area test release directly from:
 
 ```text
 https://storage.googleapis.com/south-sudan-buildings-tiles/
-  releases/yei-v3/tiles/war.pmtiles
-  releases/yei-v3/tiles/post.pmtiles
+  releases/yei-wide-z14-v1/tiles/war.pmtiles
+  releases/yei-wide-z14-v1/tiles/post.pmtiles
 ```
 
 The bucket permits anonymous reads and cross-origin `GET`/`HEAD` range
@@ -40,6 +40,11 @@ constant through z13 and scales with pixel area at z14–15, while the browser
 raises the minimum opacity of nonzero change toward detail. Dense changed
 settlements therefore retain visual strength as their internal gaps appear.
 Stable buildings use a quiet grey underlay.
+
+The current wider benchmark covers about 16,450 km² around Yei, including
+large rural gaps. Its aggregate-only z3–14 archives total 2.74 MiB; empty
+tiles are absent. Stable evidence has a browser-side opacity floor at every
+zoom so unchanged settlement remains visible.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
@@ -74,7 +79,7 @@ On the CPU tile VM run, for example:
 ```bash
 python scripts/build_viewer_tiles.py evidence-war.tif war.pmtiles \
   --pmtiles-bin "$HOME/bin/pmtiles" \
-  --publish-release yei-v3 --publish-period war
+  --publish-release next-release-id --publish-period war
 ```
 
 The builder verifies the archive before publishing. `--public-bucket` defaults

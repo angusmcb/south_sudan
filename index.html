@@ -23,17 +23,31 @@
 <body>
   <div id="map" aria-label="Map of settlement change in South Sudan"></div>
 
+  <button class="card menu-toggle" id="menu-toggle" hidden aria-label="Open map introduction">☰</button>
+
+  <aside class="card welcome-card" id="welcome-card" aria-labelledby="welcome-title">
+    <button class="icon-btn panel-close" id="welcome-close" aria-label="Close introduction">✕</button>
+    <h1 id="welcome-title">South Sudan Settlement Tracker</h1>
+    <p>Settlements are tracked using satellite data.</p>
+    <div class="welcome-actions">
+      <button class="linkish" id="examples-open" type="button">See examples</button>
+      <button class="linkish" id="about-open" type="button" aria-haspopup="dialog">About &amp; sources</button>
+    </div>
+  </aside>
+
   <!-- Appears only when an example area is selected. -->
   <aside class="card area-card" id="area-card" hidden aria-live="polite" aria-labelledby="area-name">
-    <button class="icon-btn area-close" id="area-close" aria-label="Clear selected area">✕</button>
-    <div class="area-period" id="area-period"></div>
+    <button class="icon-btn panel-close" id="area-close" aria-label="Close example">✕</button>
+    <div class="area-navigation" aria-label="Browse example areas">
+      <button class="linkish" id="area-previous" type="button">Previous</button>
+      <button class="linkish" id="area-next" type="button">Next</button>
+    </div>
     <h2 id="area-name"></h2>
     <p class="area-caption" id="area-caption"></p>
     <div class="area-meta">
+      <span class="area-period" id="area-period"></span>
       <span class="tag" id="area-driver"></span>
-      <span class="area-status" id="area-status"></span>
     </div>
-    <p class="area-note" id="area-note" hidden></p>
     <h3>Sources</h3>
     <ul class="area-sources" id="area-sources"></ul>
   </aside>
@@ -45,27 +59,10 @@
 
   <!-- Legend -->
   <aside class="card legend" id="legend" aria-label="Legend">
-    <div class="legend-title" id="legend-title">South Sudan Settlement Change</div>
     <div class="legend-ramp" role="img"
       aria-label="Diverging colour ramp from rust (built area lost) through grey (mixed loss and gain) to teal (built area gained)">
     </div>
     <div class="legend-ends"><span>Lost</span><span>Mixed</span><span>Gained</span></div>
-    <div class="legend-foot">Faint grey shows stable buildings; darker grey balances loss and gain; blank is empty.</div>
-    <button class="linkish" id="about-open" aria-haspopup="dialog">About &amp; sources</button>
-  </aside>
-
-  <!-- Places drawer -->
-  <button class="card drawer-toggle" id="drawer-toggle" aria-expanded="false" aria-controls="drawer">
-    Places
-  </button>
-  <aside class="card drawer" id="drawer" hidden aria-label="Example places">
-    <div class="drawer-head">
-      <h2>Places to look</h2>
-      <button class="icon-btn" id="drawer-close" aria-label="Close places">✕</button>
-    </div>
-    <p class="drawer-note">Illustrative locations — each must be checked against the
-      published data before it is presented as evidence.</p>
-    <div class="cards" id="cards"><!-- injected --></div>
   </aside>
 
   <!-- About dialog -->
@@ -73,15 +70,7 @@
     <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
       <button class="icon-btn modal-close" id="about-close" aria-label="Close">✕</button>
       <h2 id="about-title">About this map</h2>
-      <p>The Yei pilot shows <strong>significant change in building presence</strong>
-        between two years. Presence is mean-pooled to 4&nbsp;m, stored as integer
-        percentage, spatially matched within 4&nbsp;m, then differenced. Only changes
-        of at least 30 percentage points are retained and styled in your browser. Change is aggregated as
-        the map zooms out and resolves to sparse 4&nbsp;m loss/gain pixels when
-        zoomed in. Stable buildings appear as a quiet grey underlay; empty pixels are transparent.
-        It does not estimate a building count. Whether a
-        change reflects displacement, return, flooding, or ordinary growth is the
-        interpretation carried by the labelled places, not by the colour alone.</p>
+      <p>Explanation about south sudan, explanation about the method used. Contact info.</p>
       <p>Two periods are shown, split at the 2018 revitalised peace agreement:
         a civil-war period (2016→2018) and a post-agreement period (2019→2023).</p>
       <h3>Sources</h3>

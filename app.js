@@ -31,7 +31,7 @@ const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
 
 // ---- data source: immutable public release, raw evidence styled below ----
 const TILE_RELEASE_URL =
-  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/yei-v3/tiles";
+  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/yei-wide-z14-v1/tiles";
 
 // ---- periods: each immutable archive shares the same RGB evidence contract ----
 const PERIODS = {
@@ -95,7 +95,7 @@ const map = new maplibregl.Map({
   // bounds hug Africa, so maxBounds is what actually halts zoom-out and
   // keeps panning on the continent; minZoom is just a hard floor behind it.
   minZoom: 2.2,
-  maxZoom: 16.5,
+  maxZoom: 14.5,
   maxBounds: [[-26, -36], [57, 38]],
   attributionControl: false,
   hash: false,            // we manage the hash ourselves (it also carries period)
@@ -170,6 +170,11 @@ function changeAlphaFloor(zoom) {
   return ({ 12: 70, 13: 100, 14: 140, 15: 180 }[zoom] || 235);
 }
 
+function stableAlphaFloor(zoom) {
+  if (zoom <= 10) return 45;
+  return ({ 11: 55, 12: 70, 13: 90, 14: 112 }[zoom] || 112);
+}
+
 async function styleEvidenceTile(rawBytes, zoom) {
   const bitmap = await createImageBitmap(new Blob([rawBytes], { type: "image/webp" }));
   const canvas = document.createElement("canvas");
@@ -194,10 +199,12 @@ async function styleEvidenceTile(rawBytes, zoom) {
       image.data[offset + 2] = colour[2];
       image.data[offset + 3] = Math.round(floor + (235 - floor) * evidence);
     } else if (stable) {
+      const floor = stableAlphaFloor(zoom);
+      const evidence = stable / 255;
       image.data[offset] = stableColour[0];
       image.data[offset + 1] = stableColour[1];
       image.data[offset + 2] = stableColour[2];
-      image.data[offset + 3] = Math.round(64 * stable / 255);
+      image.data[offset + 3] = Math.round(floor + (128 - floor) * evidence);
     } else {
       image.data[offset + 3] = 0;
     }
@@ -213,14 +220,14 @@ function loadEvidence(period) {
   if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
   if (map.getSource("building-evidence")) map.removeSource("building-evidence");
   map.addSource("building-evidence", {
-    type: "raster", tileSize: 256, minzoom: 6, maxzoom: 16,
-    bounds: [30.658107982351044, 4.046116927870562, 30.70154027992287, 4.111325662710322],
+    type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
+    bounds: [30.1910424704787, 3.697656221127962, 31.40444909626827, 4.8075649502085875],
     tiles: [`evidence://${period}/{z}/{x}/{y}?theme=${themeName}`],
     attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
   });
   map.addLayer({
     id: "building-evidence", type: "raster", source: "building-evidence",
-    minzoom: 6, maxzoom: 16.5,
+    minzoom: 3, maxzoom: 14.5,
     paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" },
   }, "rivers");
   evidenceState = { period, theme: themeName };
@@ -262,7 +269,6 @@ function loadExamples() {
   examplesData
     .then((data) => {
       EXAMPLES = data.examples || [];
-      renderCards();
       ensurePlaceBoxes();
       if (state.example) selectExample(state.example, { instant: true });
     })
@@ -302,13 +308,13 @@ function ensurePlaceBoxes() {
   // Invisible fill: no tint on the interior (it stays whatever the map shows),
   // but fully transparent fills still register hover/click, so it's the hit area.
   map.addLayer({
-    id: "place-box-fill", type: "fill", source: "places", minzoom: 4.4,
+    id: "place-box-fill", type: "fill", source: "places", minzoom: 4.0,
     paint: { "fill-color": t.box, "fill-opacity": 0 },
   });
   // Glow: a wide, heavily-blurred halo under a soft core line (no dashes).
   // Both brighten on hover so the box feels lit-up and clickable.
   map.addLayer({
-    id: "place-box-glow", type: "line", source: "places", minzoom: 4.4,
+    id: "place-box-glow", type: "line", source: "places", minzoom: 4.0,
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
       "line-color": t.box,
@@ -318,7 +324,7 @@ function ensurePlaceBoxes() {
     },
   });
   map.addLayer({
-    id: "place-box-line", type: "line", source: "places", minzoom: 4.4,
+    id: "place-box-line", type: "line", source: "places", minzoom: 4.0,
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
       "line-color": t.box, "line-blur": 0.6,
@@ -353,25 +359,6 @@ function applyPlaceFilter() {
   map.triggerRepaint();
 }
 
-function renderCards() {
-  const box = document.getElementById("cards");
-  box.innerHTML = "";
-  EXAMPLES.forEach((ex) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "place";
-    b.dataset.id = ex.id;
-    b.setAttribute("aria-current", String(ex.id === state.example));
-    const driver = ex.driver ? `<span class="tag ${ex.driver}">${ex.driver}</span>` : "";
-    const unver = ex.verified ? "" : `<span class="unverified">unverified</span>`;
-    b.innerHTML =
-      `<span class="place-name">${ex.name}${unver}</span>` +
-      `<span class="place-cap">${ex.caption}</span>${driver}`;
-    b.addEventListener("click", () => selectExample(ex.id));
-    box.appendChild(b);
-  });
-}
-
 function selectExample(id, opts = {}) {
   const ex = EXAMPLES.find((e) => e.id === id);
   if (!ex) return;
@@ -380,8 +367,7 @@ function selectExample(id, opts = {}) {
   const camera = { center: [ex.lon, ex.lat], zoom: ex.zoom || 12 };
   if (opts.instant || REDUCED) map.jumpTo(camera);
   else map.flyTo({ ...camera, speed: 0.9, essential: true });
-  document.querySelectorAll(".place").forEach((b) =>
-    b.setAttribute("aria-current", String(b.dataset.id === id)));
+  setPanel("example");
   renderAreaCard(ex);
   writeHash();
 }
@@ -391,17 +377,15 @@ function renderAreaCard(ex) {
   document.getElementById("area-period").textContent =
     PERIODS[ex.period] ? PERIODS[ex.period].label : "Selected area";
   document.getElementById("area-name").textContent = ex.name;
-  document.getElementById("area-caption").textContent = ex.caption || "";
+  document.getElementById("area-caption").textContent = [ex.caption, ex.note].filter(Boolean).join(" ");
 
   const driver = document.getElementById("area-driver");
   driver.textContent = ex.driver || "context";
   driver.className = `tag ${ex.driver || ""}`.trim();
-  document.getElementById("area-status").textContent =
-    ex.verified ? "checked against the published raster" : "context not yet raster-verified";
 
-  const note = document.getElementById("area-note");
-  note.textContent = ex.note || "";
-  note.hidden = !ex.note;
+  const index = EXAMPLES.findIndex((candidate) => candidate.id === ex.id);
+  document.getElementById("area-previous").disabled = index <= 0;
+  document.getElementById("area-next").disabled = index < 0 || index >= EXAMPLES.length - 1;
 
   const sources = document.getElementById("area-sources");
   sources.replaceChildren();
@@ -428,9 +412,14 @@ function renderAreaCard(ex) {
 
 function clearExample() {
   state.example = null;
-  document.getElementById("area-card").hidden = true;
-  document.querySelectorAll(".place").forEach((b) => b.setAttribute("aria-current", "false"));
+  setPanel(null);
   writeHash();
+}
+
+function selectAdjacentExample(step) {
+  const index = EXAMPLES.findIndex((ex) => ex.id === state.example);
+  const next = EXAMPLES[index + step];
+  if (next) selectExample(next.id);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -486,28 +475,34 @@ window.addEventListener("hashchange", () => {
   if (!h) return;
   if (PERIODS[h.period]) applyPeriod(h.period, { silent: true });
   state.example = h.example || null;
-  document.querySelectorAll(".place").forEach((b) =>
-    b.setAttribute("aria-current", String(b.dataset.id === state.example)));
   const ex = EXAMPLES.find((candidate) => candidate.id === state.example);
-  if (ex) renderAreaCard(ex);
-  else document.getElementById("area-card").hidden = true;
+  if (ex) { renderAreaCard(ex); setPanel("example"); }
+  else setPanel(null);
   map.jumpTo({ center: h.center, zoom: h.zoom });
 });
 
 /* -------------------------------------------------------------------------- */
-/* UI chrome: drawer, about dialog                                            */
+/* UI chrome: introduction, example card, about dialog                        */
 /* -------------------------------------------------------------------------- */
+function setPanel(panel) {
+  document.getElementById("welcome-card").hidden = panel !== "welcome";
+  document.getElementById("area-card").hidden = panel !== "example";
+  document.getElementById("menu-toggle").hidden = Boolean(panel);
+}
+
 function wireChrome() {
-  const drawer = document.getElementById("drawer");
-  const toggle = document.getElementById("drawer-toggle");
-  const setDrawer = (open) => {
-    drawer.hidden = !open;
-    toggle.setAttribute("aria-expanded", String(open));
-    toggle.hidden = open;
-  };
-  toggle.addEventListener("click", () => setDrawer(true));
-  document.getElementById("drawer-close").addEventListener("click", () => setDrawer(false));
+  document.getElementById("menu-toggle").addEventListener("click", () => setPanel("welcome"));
+  document.getElementById("welcome-close").addEventListener("click", () => setPanel(null));
+  document.getElementById("examples-open").addEventListener("click", () => {
+    if (EXAMPLES[0]) selectExample(EXAMPLES[0].id);
+    else examplesData.then((data) => {
+      const first = (data.examples || [])[0];
+      if (first) selectExample(first.id);
+    });
+  });
   document.getElementById("area-close").addEventListener("click", clearExample);
+  document.getElementById("area-previous").addEventListener("click", () => selectAdjacentExample(-1));
+  document.getElementById("area-next").addEventListener("click", () => selectAdjacentExample(1));
 
   const about = document.getElementById("about");
   document.getElementById("about-open").addEventListener("click", () => (about.hidden = false));
@@ -515,7 +510,7 @@ function wireChrome() {
   about.addEventListener("click", (e) => { if (e.target === about) about.hidden = true; });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { about.hidden = true; setDrawer(false); }
+    if (e.key === "Escape") { about.hidden = true; setPanel(null); }
   });
 }
 

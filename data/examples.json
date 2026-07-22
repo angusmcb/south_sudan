@@ -1,5 +1,5 @@
 {
-  "_comment": "Example-area locations for the settlement-change viewer. verified:false is deliberate — docs/viewer_design.md §2 requires each location be checked against the published rasters before it is presented as evidence. The Yei pilot is published, but the nationwide examples remain outside its coverage and unverified; they preview the layout and driver tags (conflict / flood / arrivals / growth). Coordinates are approximate town centres. period is 'war' (2016->2018) or 'post' (2019->2023). The sources support the described historical event or driver, but do not verify the settlement-change raster.",
+  "_comment": "Example-area locations for the settlement-change viewer. They provide historical context and driver tags (conflict / flood / arrivals / growth); sources support the described historical event or driver, not the settlement-change raster. Coordinates are approximate town centres. period is 'war' (2016->2018) or 'post' (2019->2023).",
   "examples": [
     {
       "id": "malakal",
@@ -10,7 +10,6 @@
       "lon": 31.655,
       "lat": 9.535,
       "zoom": 12,
-      "verified": false,
       "sources": [
         {
           "title": "South Sudan: Killings, Mass Displacement and Systematic Looting as Government Forces Purge Civilians from Upper Nile",
@@ -42,7 +41,6 @@
       "lat": 8.3,
       "zoom": 11.5,
       "span_km": 34,
-      "verified": false,
       "sources": [
         {
           "title": "They Burned It All: Destruction of Villages, Killings, and Sexual Violence in Unity State, South Sudan",
@@ -74,7 +72,6 @@
       "lat": 3.67,
       "zoom": 8.7,
       "span_km": 180,
-      "verified": false,
       "note": "The published raster evidence currently covers Yei only; this cross-border area is shown as historical context.",
       "sources": [
         {
@@ -94,6 +91,12 @@
           "author": "United Nations High Commissioner for Refugees",
           "year": 2017,
           "link": "https://www.unhcr.org/news/latest/2017/3/58cbfa304/refugee-crisis-south-sudan-worlds-fastest-growing.html"
+        },
+        {
+          "title": "Soldiers Assume We Are Rebels: Escalating Violence and Abuses in South Sudan's Equatorias",
+          "author": "Human Rights Watch",
+          "year": 2017,
+          "link": "https://www.hrw.org/report/2017/08/01/soldiers-assume-we-are-rebels/escalating-violence-and-abuses-south-sudans"
         }
       ]
     },
@@ -106,7 +109,6 @@
       "lon": 27.99,
       "lat": 7.7,
       "zoom": 12,
-      "verified": false,
       "sources": [
         {
           "title": "South Sudan — Intentions and Needs Survey: Wau, December 2017",
@@ -131,7 +133,6 @@
       "lon": 32.16,
       "lat": 8.2,
       "zoom": 12,
-      "verified": false,
       "sources": [
         {
           "title": "Protection Cluster Update: Conflict Displacement in Jonglei, 5 May 2017",
@@ -168,13 +169,12 @@
       "lon": 32.48,
       "lat": 3.87,
       "zoom": 12,
-      "verified": false,
       "sources": [
         {
-          "title": "Soldiers Assume We Are Rebels: Escalating Violence and Abuses in South Sudan's Equatorias",
-          "author": "Human Rights Watch",
+          "title": "UNHCR Concerned Over the Deteriorating South Sudan Situation",
+          "author": "United Nations High Commissioner for Refugees",
           "year": 2017,
-          "link": "https://www.hrw.org/report/2017/08/01/soldiers-assume-we-are-rebels/escalating-violence-and-abuses-south-sudans"
+          "link": "https://www.unhcr.org/news/briefing-notes/unhcr-concerned-over-deteriorating-south-sudan-situation"
         }
       ]
     },
@@ -188,7 +188,6 @@
       "lat": 9.89,
       "zoom": 11,
       "span_km": 35,
-      "verified": false,
       "sources": [
         {
           "title": "South Sudan: Fighting and Deplorable Conditions in Aburoc Force 20,000 People to Flee",
@@ -208,7 +207,6 @@
       "lat": 4.86,
       "zoom": 11,
       "span_km": 20,
-      "verified": false,
       "sources": [
         {
           "title": "Jobs, Recovery, and Peacebuilding in Urban South Sudan",
@@ -233,7 +231,6 @@
       "lon": 29.79,
       "lat": 9.26,
       "zoom": 12,
-      "verified": false,
       "sources": [
         {
           "title": "South Sudan — Bentiu IDP Town Sites Population Count, July 2022",
@@ -265,7 +262,6 @@
       "lat": 9.07,
       "zoom": 11.5,
       "span_km": 28,
-      "verified": false,
       "sources": [
         {
           "title": "Worsening Flooding Increases Health Risks in South Sudan",
@@ -291,7 +287,6 @@
       "lat": 6.8,
       "zoom": 11.5,
       "span_km": 30,
-      "verified": false,
       "sources": [
         {
           "title": "South Sudan — Seasonal Floods Analysis 2020",
@@ -316,7 +311,6 @@
       "lon": 32.79,
       "lat": 11.75,
       "zoom": 12,
-      "verified": false,
       "note": "Shown for context; most arrival-related change falls beyond the viewer’s 2016–2023 imagery.",
       "sources": [
         {

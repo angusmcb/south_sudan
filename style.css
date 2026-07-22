@@ -70,6 +70,23 @@ html, body {
   padding: 14px 38px 14px 16px;
   overflow-y: auto;
 }
+.welcome-card {
+  top: 14px; left: 14px;
+  width: 340px; max-width: calc(100vw - 28px);
+  padding: 18px 42px 18px 18px;
+}
+.welcome-card h1 {
+  margin: 0 0 7px; font-size: 20px; font-weight: 650;
+  letter-spacing: -0.02em; line-height: 1.15;
+}
+.welcome-card p { margin: 0; font-size: 13px; }
+.welcome-actions { display: flex; gap: 14px; margin-top: 14px; }
+.menu-toggle {
+  top: 14px; left: 14px; width: 38px; height: 38px;
+  border: 1px solid var(--card-line); color: var(--ink);
+  font: 20px/1 system-ui, sans-serif; cursor: pointer;
+}
+.menu-toggle:hover { color: var(--teal); }
 .area-card h2 {
   margin: 1px 0 5px;
   font-size: 17px;
@@ -81,13 +98,15 @@ html, body {
   margin: 12px 0 5px; font-size: 10.5px; color: var(--label);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
-.area-close { position: absolute; top: 9px; right: 9px; }
-.area-period { font-size: 10.5px; font-weight: 650; color: var(--teal); text-transform: uppercase; letter-spacing: 0.04em; }
+.panel-close { position: absolute; top: 9px; right: 9px; }
+.area-period { font-size: 11px; color: var(--label); }
+.area-period::after { content: "·"; margin-left: 8px; }
 .area-caption { margin: 0; font-size: 12.5px; }
 .area-meta { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
 .area-meta .tag { margin-top: 0; }
-.area-status { font-size: 10.5px; color: var(--label); font-style: italic; }
-.area-note { margin: 9px 0 0; font-size: 11.5px; color: var(--label); }
+.area-navigation { display: flex; gap: 12px; margin: 0 0 10px; }
+.area-navigation .linkish { font-size: 11.5px; }
+.area-navigation .linkish:disabled { color: var(--label); cursor: default; opacity: 0.6; text-decoration: none; }
 .area-sources { margin: 0; padding-left: 17px; }
 .area-sources li { margin: 0 0 6px; font-size: 11.5px; line-height: 1.35; }
 .area-sources a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 2px; }
@@ -124,7 +143,6 @@ html, body {
   bottom: 26px; left: 14px;
   width: 236px; padding: 11px 13px;
 }
-.legend-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
 .legend-ramp {
   height: 12px; border-radius: 3px; background: var(--ramp);
   border: 1px solid var(--card-line);
@@ -133,40 +151,6 @@ html, body {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--label); margin-top: 4px;
 }
-.legend-foot { font-size: 10.5px; color: var(--label); margin-top: 6px; line-height: 1.35; }
-
-/* ---- places drawer ---- */
-.drawer-toggle {
-  top: 14px; right: 14px;
-  padding: 9px 15px; border: 1px solid var(--card-line);
-  font: inherit; font-size: 13px; font-weight: 600; color: var(--ink);
-  cursor: pointer;
-}
-.drawer-toggle:hover { color: var(--teal); }
-
-.drawer {
-  top: 14px; right: 14px;
-  width: 300px; max-width: calc(100vw - 28px);
-  max-height: calc(100vh - 28px);
-  padding: 14px 16px; overflow-y: auto;
-}
-.drawer-head { display: flex; align-items: center; justify-content: space-between; }
-.drawer-head h2 { margin: 0; font-size: 15px; }
-.drawer-note { font-size: 11.5px; color: var(--label); margin: 6px 0 12px; }
-
-.cards { display: flex; flex-direction: column; gap: 8px; }
-.place {
-  text-align: left; cursor: pointer;
-  background: rgba(120, 126, 110, 0.06);
-  border: 1px solid var(--card-line); border-radius: 8px;
-  padding: 9px 11px; font: inherit; color: var(--ink);
-  transition: background 120ms, border-color 120ms;
-}
-.place:hover { background: rgba(46, 126, 114, 0.10); border-color: rgba(46,126,114,0.4); }
-.place:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
-.place[aria-current="true"] { border-color: var(--teal); background: rgba(46,126,114,0.12); }
-.place .place-name { display: block; font-weight: 600; font-size: 13.5px; }
-.place .place-cap { display: block; font-size: 11.5px; color: var(--label); margin-top: 2px; }
 .tag {
   display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700;
   letter-spacing: 0.03em; text-transform: uppercase;
@@ -176,7 +160,6 @@ html, body {
 .tag.flood    { background: rgba(70,120,150,0.15); color: #40708f; }
 .tag.arrivals { background: rgba(46,126,114,0.15); color: var(--teal); }
 .tag.growth   { background: rgba(120,126,110,0.18); color: var(--label); }
-.place .unverified { font-size: 10px; color: var(--label); margin-left: 6px; font-style: italic; }
 
 /* ---- town labels (DOM markers; no glyphs needed) ---- */
 .town {
@@ -216,14 +199,15 @@ html, body {
 
 /* ---- mobile: a clean vertical stack, no overlapping controls ---- */
 @media (max-width: 640px) {
-  /* top row: selected-area information + Places */
+  /* top row: selected-area information */
   .area-card {
-    top: 12px; left: 12px; width: calc(100vw - 108px); max-width: none;
+    top: 12px; left: 12px; width: calc(100vw - 24px); max-width: none;
     max-height: calc(100vh - 218px); padding: 11px 34px 11px 12px;
   }
+  .welcome-card { top: 12px; left: 12px; width: calc(100vw - 24px); max-width: none; }
+  .menu-toggle { top: 12px; left: 12px; }
   .area-card h2 { font-size: 15px; }
   .area-sources li { font-size: 11px; }
-  .drawer-toggle { top: 12px; right: 12px; padding: 8px 12px; }
 
   /* period switch: bottom-centre (thumb zone) */
   .period-switch { top: auto; bottom: 14px; left: 50%; transform: translateX(-50%); }
@@ -231,9 +215,6 @@ html, body {
 
   /* legend: above the switch, full width */
   .legend { bottom: 62px; left: 12px; right: 12px; width: auto; padding: 9px 12px; }
-
-  /* places: bottom sheet */
-  .drawer { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: 62vh; }
 
   /* touch devices pinch-zoom: drop the +/- buttons so they don't fight the
      bottom-centre switch; keep attribution, moved out of the switch's way */
