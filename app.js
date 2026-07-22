@@ -41,10 +41,17 @@ const PERIODS = {
 const DEFAULT_PERIOD = "war";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const HOME = { center: [30.68, 4.09], zoom: 10.3 };
+const HOME = { center: [29.7, 7.9], zoom: 5.2 };
+const HOME_BOUNDS = [[23.3, 3.4], [36.1, 12.3]];
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
+
+// Begin fetching page data immediately, in parallel with MapLibre's style and
+// source work. The map only consumes these promises once it is ready to add
+// markers or layers, so data latency never sits on the map's load event.
+const examplesData = fetch("data/examples.json").then((response) => response.json());
+const townsData = fetch("data/towns.geojson").then((response) => response.json());
 
 /* -------------------------------------------------------------------------- */
 /* Map                                                                        */
@@ -118,6 +125,7 @@ map.addControl(new maplibregl.AttributionControl({
 })();
 
 map.on("load", () => {
+  if (!fromHash) map.fitBounds(HOME_BOUNDS, { padding: 32, duration: 0 });
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
   loadEvidence(state.period);
   loadTowns();
@@ -251,8 +259,7 @@ function applyPeriod(key, opts = {}) {
 let EXAMPLES = [];
 
 function loadExamples() {
-  fetch("data/examples.json")
-    .then((r) => r.json())
+  examplesData
     .then((data) => {
       EXAMPLES = data.examples || [];
       renderCards();
@@ -430,8 +437,7 @@ function clearExample() {
 /* Town labels — DOM markers (system fonts, no glyph PBFs required)           */
 /* -------------------------------------------------------------------------- */
 function loadTowns() {
-  fetch("data/towns.geojson")
-    .then((r) => r.json())
+  townsData
     .then((fc) => {
       const markers = (fc.features || []).map((f) => {
         const el = document.createElement("div");

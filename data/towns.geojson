@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "_comment": "Orientation town labels, rendered as DOM markers by app.js (no glyph PBFs). 'minzoom' tiers them: main towns (0) show always; extras (7) fade in when zoomed in. Added-town coordinates cross-checked against the GeoNames South Sudan gazetteer; intended for orientation, not operational use.",
+  "_comment": "Orientation place labels, rendered as DOM markers by app.js (no glyph PBFs). 'minzoom' tiers them: main towns (0) show always; regional towns (7) fade in when zoomed in; example-area towns (9) and villages (10) appear only at close range. The Bidi Bidi and Imvepi refugee-settlement labels provide context for the cross-border Central Equatoria example. Added-town coordinates are cross-checked against the GeoNames South Sudan gazetteer where available; intended for orientation, not operational use.",
   "features": [
     {
       "type": "Feature",
@@ -355,6 +355,20 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "Mayendit",
+        "minzoom": 9
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.00463,
+          8.13318
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "Koch",
         "minzoom": 7
       },
@@ -384,7 +398,7 @@
       "type": "Feature",
       "properties": {
         "name": "Old Fangak",
-        "minzoom": 7
+        "minzoom": 9
       },
       "geometry": {
         "type": "Point",
@@ -454,7 +468,7 @@
       "type": "Feature",
       "properties": {
         "name": "Waat",
-        "minzoom": 7
+        "minzoom": 10
       },
       "geometry": {
         "type": "Point",
@@ -573,6 +587,76 @@
         "coordinates": [
           32.824,
           6.644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Pajok",
+        "minzoom": 10
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.48212,
+          3.86512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kodok",
+        "minzoom": 9
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.109444,
+          9.888889
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Aburoc",
+        "minzoom": 10
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.109,
+          10.159
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bidi Bidi settlement",
+        "minzoom": 8.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.34778,
+          3.52806
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Imvepi settlement",
+        "minzoom": 8.5
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.2841,
+          3.2452
         ]
       }
     }

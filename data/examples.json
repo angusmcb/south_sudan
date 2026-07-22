@@ -4,7 +4,7 @@
     {
       "id": "malakal",
       "name": "Malakal",
-      "caption": "Town emptied during the war; the UN protection site grows alongside it.",
+      "caption": "Conflict and displacement reshaped Malakal and the adjacent UN protection site.",
       "driver": "conflict",
       "period": "war",
       "lon": 31.655,
@@ -35,7 +35,7 @@
     {
       "id": "leer",
       "name": "Leer & Mayendit",
-      "caption": "Repeated razing of villages across Unity State, 2015–17.",
+      "caption": "Conflict in 2015–17 brought village destruction and displacement across Leer and Mayendit.",
       "driver": "conflict",
       "period": "war",
       "lon": 30.14,
@@ -60,39 +60,47 @@
           "title": "Indiscriminate Attacks Against Civilians in Southern Unity: April–May 2018",
           "author": "United Nations Mission in South Sudan and Office of the United Nations High Commissioner for Human Rights",
           "year": 2018,
-          "link": "https://unmiss.unmissions.org/en/press-releases/ohchr-un-demands-justice-civilians-deliberately-and-ruthlessly-targeted"
+          "link": "https://unmiss.unmissions.org/sites/default/files/unmissohchr_report_on_indiscriminate_attacks_against_civilians_in_southern_unity_april-may_2018.pdf"
         }
       ]
     },
     {
-      "id": "yei",
-      "name": "Yei",
-      "caption": "Mass departure in 2016–17 as fighting reached the town.",
+      "id": "central-equatoria-uganda",
+      "name": "Central Equatoria → northern Uganda",
+      "caption": "Fighting in 2016–17 displaced people from Central Equatoria, including to refugee settlements in northern Uganda.",
       "driver": "conflict",
       "period": "war",
-      "lon": 30.68,
-      "lat": 4.09,
-      "zoom": 12,
+      "lon": 30.98,
+      "lat": 3.67,
+      "zoom": 8.7,
+      "span_km": 180,
       "verified": false,
+      "note": "The published raster evidence currently covers Yei only; this cross-border area is shown as historical context.",
       "sources": [
         {
           "title": "Human Rights Violations and Abuses in Yei between July 2016 and January 2017",
           "author": "United Nations Mission in South Sudan and Office of the United Nations High Commissioner for Human Rights",
           "year": 2017,
-          "link": "https://unmiss.unmissions.org/en/press-releases/un-report-exposes-human-rights-violations-and-abuses-against-civilians-and"
+          "link": "https://unmiss.unmissions.org/sites/default/files/report_human_rights_violations_and_abuses_in_yei_july_2016_to_january_2017_0.pdf"
         },
         {
-          "title": "South Sudan — Kajo-Keji, Central Equatoria: Rapid Assessment Report, 29 June–12 July 2017",
-          "author": "International Organization for Migration, Displacement Tracking Matrix",
+          "title": "Uganda Refugee Response Monitoring: Bidi Bidi Settlement Fact Sheet, December 2017",
+          "author": "United Nations High Commissioner for Refugees",
           "year": 2017,
-          "link": "https://dtm.iom.int/reports/south-sudan-%E2%80%94-kajo-keji-central-equatoria-rapid-assessment-report-29-june-%E2%80%9312-july-2017"
+          "link": "https://data.unhcr.org/fr/documents/download/64966"
+        },
+        {
+          "title": "Refugee Crisis in South Sudan Now World's Fastest Growing",
+          "author": "United Nations High Commissioner for Refugees",
+          "year": 2017,
+          "link": "https://www.unhcr.org/news/latest/2017/3/58cbfa304/refugee-crisis-south-sudan-worlds-fastest-growing.html"
         }
       ]
     },
     {
       "id": "wau",
       "name": "Wau",
-      "caption": "Displacement into town and camps from 2016.",
+      "caption": "Conflict displaced people into Wau and sites near the town from 2016.",
       "driver": "conflict",
       "period": "war",
       "lon": 27.99,
@@ -117,7 +125,7 @@
     {
       "id": "waat",
       "name": "Waat",
-      "caption": "Waat was largely emptied during the 2017 government offensive; displaced residents reported homes burned and destroyed.",
+      "caption": "Violence in 2017 displaced residents from Waat; sources report homes were burned and destroyed.",
       "driver": "conflict",
       "period": "war",
       "lon": 32.16,
@@ -154,7 +162,7 @@
     {
       "id": "pajok",
       "name": "Pajok",
-      "caption": "Most residents fled after government forces attacked the town in April 2017.",
+      "caption": "An April 2017 attack led most residents to flee Pajok.",
       "driver": "conflict",
       "period": "war",
       "lon": 32.48,
@@ -162,18 +170,6 @@
       "zoom": 12,
       "verified": false,
       "sources": [
-        {
-          "title": "Press Briefing on South Sudan and Maldives",
-          "author": "Office of the United Nations High Commissioner for Human Rights",
-          "year": 2017,
-          "link": "https://www.ohchr.org/en/2017/04/press-briefing-south-sudan-and-maldives"
-        },
-        {
-          "title": "UN Says Prevented from Accessing South Sudan Town",
-          "author": "United Nations Mission in South Sudan",
-          "year": 2017,
-          "link": "https://reliefweb.int/report/south-sudan/un-says-prevented-accessing-s-sudan-town"
-        },
         {
           "title": "Soldiers Assume We Are Rebels: Escalating Violence and Abuses in South Sudan's Equatorias",
           "author": "Human Rights Watch",
@@ -185,7 +181,7 @@
     {
       "id": "kodok-aburoc",
       "name": "Kodok & Aburoc",
-      "caption": "Fighting emptied Kodok in 2017 while tens of thousands sought temporary shelter around Aburoc.",
+      "caption": "Fighting in 2017 displaced people from Kodok, while many sought shelter around Aburoc.",
       "driver": "conflict",
       "period": "war",
       "lon": 32.12,
@@ -198,20 +194,14 @@
           "title": "South Sudan: Fighting and Deplorable Conditions in Aburoc Force 20,000 People to Flee",
           "author": "Médecins Sans Frontières",
           "year": 2017,
-          "link": "https://reliefweb.int/report/south-sudan/south-sudan-fighting-and-deplorable-conditions-aburoc-force-20000-people-flee"
-        },
-        {
-          "title": "New South Sudan Fighting Displaces 25,000 People",
-          "author": "Associated Press, republished by Voice of America",
-          "year": 2017,
-          "link": "https://www.voanews.com/a/new-south-sudan-fighting-displaced-tens-of-thousands-people/3827138.html"
+          "link": "https://www.msf.org/south-sudan-fighting-and-deplorable-conditions-aburoc-force-20000-people-flee"
         }
       ]
     },
     {
       "id": "juba",
       "name": "Juba",
-      "caption": "The capital expands through the post-agreement years — growth, not displacement.",
+      "caption": "Urban growth in the capital during the post-agreement years.",
       "driver": "growth",
       "period": "post",
       "lon": 31.58,
@@ -237,7 +227,7 @@
     {
       "id": "bentiu",
       "name": "Bentiu",
-      "caption": "Protection-site growth, then severe flooding in 2021–22.",
+      "caption": "Flooding and the formation of displacement sites around Bentiu in 2021–22.",
       "driver": "flood",
       "period": "post",
       "lon": 29.79,
@@ -268,11 +258,11 @@
     {
       "id": "fangak",
       "name": "Old Fangak (Sudd)",
-      "caption": "Sustained flooding along the Sudd margins from 2020.",
+      "caption": "Prolonged flooding along the Sudd margins from 2020.",
       "driver": "flood",
       "period": "post",
-      "lon": 30.75,
-      "lat": 9.42,
+      "lon": 30.883,
+      "lat": 9.07,
       "zoom": 11.5,
       "span_km": 28,
       "verified": false,
@@ -294,7 +284,7 @@
     {
       "id": "pibor",
       "name": "Pibor",
-      "caption": "Severe flooding and renewed violence repeatedly displaced communities around Pibor in 2020–21.",
+      "caption": "Flooding and violence displaced communities around Pibor in 2020–21.",
       "driver": "flood",
       "period": "post",
       "lon": 33.13,
@@ -320,26 +310,20 @@
     {
       "id": "renk",
       "name": "Renk",
-      "caption": "Arrivals from Sudan after 2023 — beyond the 2016–2023 data; a headline case for the model's own epochs.",
+      "caption": "Arrivals from Sudan reached Renk in 2023; the main effects lie beyond this viewer’s 2016–2023 imagery.",
       "driver": "arrivals",
       "period": "post",
       "lon": 32.79,
       "lat": 11.75,
       "zoom": 12,
       "verified": false,
-      "note": "Outside current OBT range (2016–2023); shown as a placeholder for future model epochs.",
+      "note": "Shown for context; most arrival-related change falls beyond the viewer’s 2016–2023 imagery.",
       "sources": [
         {
           "title": "South Sudan — Renk Transit Center: Intentions Survey, December 2023",
           "author": "International Organization for Migration, Displacement Tracking Matrix",
           "year": 2024,
           "link": "https://dtm.iom.int/reports/south-sudan-renk-transit-center-intentions-survey-december-2023"
-        },
-        {
-          "title": "South Sudan Hits Dire Milestone of More Than 100,000 New Arrivals Fleeing Violence in Sudan",
-          "author": "United Nations High Commissioner for Refugees",
-          "year": 2023,
-          "link": "https://www.unhcr.org/africa/news/press-releases/south-sudan-hits-dire-milestone-more-100-000-new-arrivals-country-fleeing"
         },
         {
           "title": "Sudan Situation: UNHCR External Update No. 42",

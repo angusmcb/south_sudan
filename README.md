@@ -45,6 +45,26 @@ The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
 context statement, verification status, and linked area-specific sources.
 
+## Publishing the website
+
+The source site remains in this private repository. GitHub Pages is served from
+the separate public repository
+[`angusmcb/south_sudan`](https://github.com/angusmcb/south_sudan), at
+[`https://angusmcb.com/south_sudan/`](https://angusmcb.com/south_sudan/).
+Only the contents of `viewer/` are exported; no other source files or private
+repository history are published.
+
+After committing viewer changes in this repository, publish them with:
+
+```bash
+git subtree push --prefix=viewer viewer-pages main
+```
+
+`viewer-pages` is the Git remote for `angusmcb/south_sudan`. The exported
+repository includes `viewer/.github/workflows/pages.yml` as its root Pages
+workflow, which serves the static files from the repository root. Do not edit
+the public repository directly; make changes here and republish them.
+
 ## Building and publishing a period
 
 First produce a three-band evidence COG with `scripts/export_viewer_ee.py`
