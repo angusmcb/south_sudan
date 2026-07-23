@@ -52,6 +52,12 @@ has 44,996 (8.03 MiB); empty tiles are absent. Stable evidence has a
 browser-side opacity floor at every zoom so unchanged settlement remains
 visible.
 
+Both period sources are attached when the map loads. PMTiles still transfers
+only the byte ranges for tiles in the current viewport—not either complete
+archive—but the inactive period is warmed in parallel at zero opacity. The
+period switch therefore changes layer opacity rather than destroying and
+recreating the raster source.
+
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
 context statement, verification status, and linked area-specific sources.

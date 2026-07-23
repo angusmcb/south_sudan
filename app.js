@@ -281,24 +281,50 @@ async function styleEvidenceTile(rawBytes, zoom) {
   return canvasPngBytes(canvas);
 }
 
+function evidenceId(period) {
+  return `building-evidence-${period}`;
+}
+
 function loadEvidence(period) {
   if (!map.isStyleLoaded() || !PERIODS[period]) return;
   const themeName = themeQuery.matches ? "dark" : "light";
-  if (evidenceState && evidenceState.period === period && evidenceState.theme === themeName) return;
-  if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
-  if (map.getSource("building-evidence")) map.removeSource("building-evidence");
-  map.addSource("building-evidence", {
-    type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
-    bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
-    tiles: [`evidence://${period}/{z}/{x}/{y}?theme=${themeName}`],
-    attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
+
+  // A theme change requires differently styled PNGs, so rebuild both sources.
+  // Ordinary period changes keep both source caches alive and only swap layer
+  // opacity; the alternate period is fetched alongside the visible viewport
+  // instead of starting from cold after the button click.
+  if (evidenceState && evidenceState.theme !== themeName) {
+    Object.keys(PERIODS).forEach((key) => {
+      const id = evidenceId(key);
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
+    });
+    evidenceState = null;
+  }
+
+  Object.keys(PERIODS).forEach((key) => {
+    const id = evidenceId(key);
+    if (!map.getSource(id)) {
+      map.addSource(id, {
+        type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
+        bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
+        tiles: [`evidence://${key}/{z}/{x}/{y}?theme=${themeName}`],
+        attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
+      });
+      map.addLayer({
+        id, type: "raster", source: id,
+        minzoom: 3, maxzoom: 14.5,
+        paint: {
+          "raster-opacity": key === period ? 1 : 0,
+          "raster-opacity-transition": { duration: 0, delay: 0 },
+          "raster-fade-duration": 0,
+          "raster-resampling": "nearest",
+        },
+      }, "rivers");
+    }
+    map.setPaintProperty(id, "raster-opacity", key === period ? 1 : 0);
   });
-  map.addLayer({
-    id: "building-evidence", type: "raster", source: "building-evidence",
-    minzoom: 3, maxzoom: 14.5,
-    paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" },
-  }, "rivers");
-  evidenceState = { period, theme: themeName };
+  evidenceState = { theme: themeName };
 }
 
 /* -------------------------------------------------------------------------- */
