@@ -54,9 +54,10 @@ visible.
 
 Both period sources are attached when the map loads. PMTiles still transfers
 only the byte ranges for tiles in the current viewport—not either complete
-archive—but the inactive period is warmed in parallel at zero opacity. The
-period switch therefore changes layer opacity rather than destroying and
-recreating the raster source.
+archive—but an effectively invisible layer warms the inactive period in
+parallel. One display layer is recreated against the selected period's
+uniquely named source, avoiding MapLibre's same-z/x/y raster-cache collision
+while retaining both source caches.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,

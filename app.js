@@ -47,6 +47,7 @@ const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
+let mapReady = false;
 
 // Begin fetching page data immediately, in parallel with MapLibre's style and
 // source work. The map only consumes these promises once it is ready to add
@@ -58,27 +59,27 @@ const townsData = fetch("data/towns.geojson").then((response) => response.json()
 /* Map                                                                        */
 /* -------------------------------------------------------------------------- */
 if (window.pmtiles && window.maplibregl) {
-  const protocol = new pmtiles.Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
   const archives = new Map(Object.entries(PERIODS).map(([period, spec]) => [
     period, new pmtiles.PMTiles(`${TILE_RELEASE_URL}/${spec.archive}`),
   ]));
   const styledCache = new Map();
 
-  maplibregl.addProtocol("evidence", async (params, abortController) => {
-    const match = params.url.match(/^evidence:\/\/(war|post)\/(\d+)\/(\d+)\/(\d+)/);
-    if (!match) throw new Error(`invalid evidence URL: ${params.url}`);
-    const [, period, z, x, y] = match;
-    const themeName = themeQuery.matches ? "dark" : "light";
-    const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
-    if (styledCache.has(cacheKey)) return { data: styledCache.get(cacheKey) };
-    const response = await archives.get(period).getZxy(
-      Number(z), Number(x), Number(y), abortController.signal);
-    if (!response) return { data: null };
-    const data = await styleEvidenceTile(response.data, Number(z));
-    styledCache.set(cacheKey, data);
-    if (styledCache.size > 256) styledCache.delete(styledCache.keys().next().value);
-    return { data, cacheControl: response.cacheControl, expires: response.expires };
+  Object.keys(PERIODS).forEach((period) => {
+    maplibregl.addProtocol(`evidence-${period}`, async (params, abortController) => {
+      const match = params.url.match(/^evidence-(?:war|post):\/\/tiles\/(\d+)\/(\d+)\/(\d+)/);
+      if (!match) throw new Error(`invalid evidence URL: ${params.url}`);
+      const [, z, x, y] = match;
+      const themeName = themeQuery.matches ? "dark" : "light";
+      const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
+      if (styledCache.has(cacheKey)) return { data: styledCache.get(cacheKey) };
+      const response = await archives.get(period).getZxy(
+        Number(z), Number(x), Number(y), abortController.signal);
+      if (!response) return { data: null };
+      const data = await styleEvidenceTile(response.data, Number(z));
+      styledCache.set(cacheKey, data);
+      if (styledCache.size > 256) styledCache.delete(styledCache.keys().next().value);
+      return { data, cacheControl: response.cacheControl, expires: response.expires };
+    });
   });
 }
 
@@ -126,6 +127,7 @@ map.addControl(new maplibregl.AttributionControl({
 })();
 
 map.on("load", () => {
+  mapReady = true;
   if (!fromHash) map.fitBounds(HOME_BOUNDS, { padding: 32, duration: 0 });
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
   loadEvidence(state.period);
@@ -139,7 +141,7 @@ map.on("moveend", writeHash);
 map.on("error", (e) => console.warn("map error:", e && e.error ? e.error.message : e));
 
 // Follow the OS light/dark preference at runtime (matches the CSS chrome).
-themeQuery.addEventListener("change", () => { if (map.isStyleLoaded()) applyTheme(); });
+themeQuery.addEventListener("change", () => { if (mapReady) applyTheme(); });
 
 function applyTheme() {
   const t = theme();
@@ -281,50 +283,52 @@ async function styleEvidenceTile(rawBytes, zoom) {
   return canvasPngBytes(canvas);
 }
 
-function evidenceId(period) {
-  return `building-evidence-${period}`;
-}
-
 function loadEvidence(period) {
-  if (!map.isStyleLoaded() || !PERIODS[period]) return;
+  if (!mapReady || !PERIODS[period]) return;
   const themeName = themeQuery.matches ? "dark" : "light";
+  if (evidenceState && evidenceState.period === period && evidenceState.theme === themeName) return;
 
-  // A theme change requires differently styled PNGs, so rebuild both sources.
-  // Ordinary period changes keep both source caches alive and only swap layer
-  // opacity; the alternate period is fetched alongside the visible viewport
-  // instead of starting from cold after the button click.
   if (evidenceState && evidenceState.theme !== themeName) {
+    if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
     Object.keys(PERIODS).forEach((key) => {
-      const id = evidenceId(key);
-      if (map.getLayer(id)) map.removeLayer(id);
-      if (map.getSource(id)) map.removeSource(id);
+      const prewarmId = `building-evidence-prewarm-${key}`;
+      const sourceId = `building-evidence-source-${key}`;
+      if (map.getLayer(prewarmId)) map.removeLayer(prewarmId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
     });
-    evidenceState = null;
   }
 
   Object.keys(PERIODS).forEach((key) => {
-    const id = evidenceId(key);
-    if (!map.getSource(id)) {
-      map.addSource(id, {
+    const sourceId = `building-evidence-source-${key}`;
+    const prewarmId = `building-evidence-prewarm-${key}`;
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, {
         type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
         bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
-        tiles: [`evidence://${key}/{z}/{x}/{y}?theme=${themeName}`],
+        tiles: [`evidence-${key}://tiles/{z}/{x}/{y}?theme=${themeName}`],
         attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
       });
+    }
+    if (!map.getLayer(prewarmId)) {
       map.addLayer({
-        id, type: "raster", source: id,
+        id: prewarmId, type: "raster", source: sourceId,
         minzoom: 3, maxzoom: 14.5,
         paint: {
-          "raster-opacity": key === period ? 1 : 0,
-          "raster-opacity-transition": { duration: 0, delay: 0 },
+          "raster-opacity": 0.001,
           "raster-fade-duration": 0,
           "raster-resampling": "nearest",
         },
       }, "rivers");
     }
-    map.setPaintProperty(id, "raster-opacity", key === period ? 1 : 0);
   });
-  evidenceState = { theme: themeName };
+
+  if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
+  map.addLayer({
+    id: "building-evidence", type: "raster", source: `building-evidence-source-${period}`,
+    minzoom: 3, maxzoom: 14.5,
+    paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" },
+  }, "rivers");
+  evidenceState = { period, theme: themeName };
 }
 
 /* -------------------------------------------------------------------------- */
