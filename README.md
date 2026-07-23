@@ -46,13 +46,14 @@ and gain remain distinguishable instead of both clipping to 255; at z14 it
 scales with pixel area to retain detail. The browser raises the minimum opacity
 of nonzero change toward detail. Weak aggregate change density at z3–8 is
 progressively suppressed instead of colouring almost every settlement red or
-green. From z9, the signed-evidence floor matches the archive's smallest
-encoded nonzero value and its display opacity rises at every zoom, so a change
-cluster does not turn neutral as its aggregate splits into finer pixels. The
-stable channel has its own overview density threshold, so brown context marks
-credible settlement concentrations rather than scattered isolated source
-cells. At z12–14 a small screen-space halo expands red/green evidence without
-changing the underlying measurements.
+green. The z8–10 floors taper from regional density filtering into full detail
+at z11, so scattered rural cells do not form a city-like texture around Wau
+and Aweil. Display opacity rises at every zoom, so accepted change remains
+legible as aggregates split into finer pixels. The stable channel has its own
+overview density threshold, so brown context marks credible settlement
+concentrations rather than scattered isolated source cells. At z12–14 a small
+screen-space halo expands red/green evidence without changing the underlying
+measurements.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
 50 km buffer. War has 124,119 addressed tiles (38.94 MiB) and post-agreement

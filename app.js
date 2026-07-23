@@ -183,8 +183,9 @@ function changeAlphaFloor(zoom) {
 function minimumSignedEvidence(zoom) {
   if (zoom <= 5) return 30;
   if (zoom <= 6) return 24;
-  if (zoom <= 7) return 16;
-  if (zoom <= 8) return 8;
+  if (zoom <= 8) return 24;
+  if (zoom <= 9) return 12;
+  if (zoom <= 10) return 6;
   return 1;
 }
 
@@ -200,9 +201,9 @@ function stableAlphaFloor(zoom) {
 function minimumStableEvidence(zoom) {
   if (zoom <= 5) return 16;
   if (zoom <= 6) return 12;
-  if (zoom <= 7) return 8;
-  if (zoom <= 8) return 4;
-  if (zoom <= 9) return 2;
+  if (zoom <= 8) return 16;
+  if (zoom <= 9) return 12;
+  if (zoom <= 10) return 6;
   return 1;
 }
 
