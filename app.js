@@ -15,15 +15,15 @@
 // ---- palette (mirrors style.css / docs §4), theme-aware ----
 // The map background/lines/ramp are set from JS because a MapLibre style is
 // static JSON and can't follow prefers-color-scheme; the CSS chrome follows
-// the same OS signal, so the two stay in step. dark.neutral == dark.land so
-// "no change" dissolves into the map (docs §4 rule) in both themes.
+// the same OS signal, so the two stay in step. Stable/small change is a warm
+// brown, visually separate from empty land and from the rust/teal endpoints.
 const THEME = {
   light: {
-    land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#E8E6DB", teal: "#2E7E72", underlay: "#C9C4B2", mixed: "#8F8A7B",
+    land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#78563E", teal: "#2E7E72", underlay: "#60442F", mixed: "#78563E",
     water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60"
   },
   dark: {
-    land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#141714", teal: "#4AA894", underlay: "#2A2E27", mixed: "#7A7F74",
+    land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#8A6248", teal: "#4AA894", underlay: "#76533C", mixed: "#8A6248",
     water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294"
   },
 };
@@ -167,13 +167,33 @@ function hexRgb(hex) {
 }
 
 function changeAlphaFloor(zoom) {
-  if (zoom <= 10) return 35;
-  return ({ 11: 55, 12: 95, 13: 170, 14: 255 }[zoom] || 255);
+  if (zoom <= 5) return 30;
+  if (zoom <= 10) return 45;
+  return ({ 11: 95, 12: 180, 13: 210, 14: 255 }[zoom] || 255);
+}
+
+// Overview pixels aggregate many z14 cells. At national zooms, tiny nonzero
+// aggregate values otherwise turn nearly every settlement red or green. Treat
+// weak overview density as neutral context; detail zooms retain every changed
+// cell from the evidence archive.
+function minimumSignedEvidence(zoom) {
+  if (zoom <= 5) return 128;
+  if (zoom <= 6) return 96;
+  if (zoom <= 8) return 72;
+  if (zoom <= 10) return 36;
+  return 1;
 }
 
 function stableAlphaFloor(zoom) {
-  if (zoom <= 10) return 45;
-  return ({ 11: 55, 12: 70, 13: 90, 14: 112 }[zoom] || 112);
+  if (zoom <= 10) return 55;
+  return ({ 11: 70, 12: 90, 13: 115, 14: 145 }[zoom] || 145);
+}
+
+function changeHaloStyle(zoom) {
+  if (zoom >= 14) return { radius: 2, alpha: 205 };
+  if (zoom >= 13) return { radius: 1, alpha: 180 };
+  if (zoom >= 12) return { radius: 1, alpha: 155 };
+  return null;
 }
 
 async function styleEvidenceTile(rawBytes, zoom) {
@@ -188,24 +208,58 @@ async function styleEvidenceTile(rawBytes, zoom) {
   const t = theme();
   const rust = hexRgb(t.rust), teal = hexRgb(t.teal);
   const mixed = hexRgb(t.mixed), stableColour = hexRgb(t.underlay);
+  const haloStyle = changeHaloStyle(zoom);
+  const signedEvidenceFloor = minimumSignedEvidence(zoom);
+  let haloLoss = null, haloGain = null;
+  if (haloStyle) {
+    const pixelCount = canvas.width * canvas.height;
+    haloLoss = new Uint8Array(pixelCount);
+    haloGain = new Uint8Array(pixelCount);
+    for (let sourcePixel = 0; sourcePixel < pixelCount; sourcePixel += 1) {
+      const sourceOffset = sourcePixel * 4;
+      const loss = image.data[sourceOffset];
+      const gain = image.data[sourceOffset + 1];
+      if (!loss && !gain) continue;
+      const sourceX = sourcePixel % canvas.width;
+      const sourceY = Math.floor(sourcePixel / canvas.width);
+      for (let dy = -haloStyle.radius; dy <= haloStyle.radius; dy += 1) {
+        const targetY = sourceY + dy;
+        if (targetY < 0 || targetY >= canvas.height) continue;
+        for (let dx = -haloStyle.radius; dx <= haloStyle.radius; dx += 1) {
+          const targetX = sourceX + dx;
+          if (targetX < 0 || targetX >= canvas.width) continue;
+          const targetPixel = targetY * canvas.width + targetX;
+          haloLoss[targetPixel] = Math.max(haloLoss[targetPixel], loss);
+          haloGain[targetPixel] = Math.max(haloGain[targetPixel], gain);
+        }
+      }
+    }
+  }
   for (let offset = 0; offset < image.data.length; offset += 4) {
     const loss = image.data[offset], gain = image.data[offset + 1];
     const stable = image.data[offset + 2];
-    if (loss || gain) {
-      const colour = loss === gain ? mixed : loss > gain ? rust : teal;
+    const pixel = offset / 4;
+    const shownLoss = loss || (haloLoss && haloLoss[pixel]) || 0;
+    const shownGain = gain || (haloGain && haloGain[pixel]) || 0;
+    const strongestSignedEvidence = Math.max(shownLoss, shownGain);
+    if (strongestSignedEvidence >= signedEvidenceFloor) {
+      const colour = shownLoss === shownGain ? mixed : shownLoss > shownGain ? rust : teal;
       const floor = changeAlphaFloor(zoom);
-      const evidence = Math.max(loss, gain) / 255;
+      const evidence = strongestSignedEvidence / 255;
+      const isHalo = !loss && !gain;
       image.data[offset] = colour[0];
       image.data[offset + 1] = colour[1];
       image.data[offset + 2] = colour[2];
-      image.data[offset + 3] = Math.round(floor + (255 - floor) * evidence);
-    } else if (stable) {
+      image.data[offset + 3] = isHalo
+        ? Math.round(haloStyle.alpha + (220 - haloStyle.alpha) * evidence)
+        : Math.round(floor + (255 - floor) * evidence);
+    } else if (stable || strongestSignedEvidence) {
       const floor = stableAlphaFloor(zoom);
-      const evidence = stable / 255;
+      const evidence = Math.max(stable, strongestSignedEvidence) / 255;
       image.data[offset] = stableColour[0];
       image.data[offset + 1] = stableColour[1];
       image.data[offset + 2] = stableColour[2];
-      image.data[offset + 3] = Math.round(floor + (128 - floor) * evidence);
+      image.data[offset + 3] = Math.round(floor + (170 - floor) * evidence);
     } else {
       image.data[offset + 3] = 0;
     }

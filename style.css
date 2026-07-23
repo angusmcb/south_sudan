@@ -9,7 +9,7 @@
   --ink:     #3A3F38;   /* body text */
   --label:   #646A60;   /* town labels */
   --rust:    #BC4F25;   /* buildings lost */
-  --neutral: #8F8A7B;   /* balanced loss/gain within an aggregate */
+  --neutral: #78563E;   /* stable or balanced evidence: dark warm brown */
   --teal:    #2E7E72;   /* buildings gained */
   --card-bg: rgba(252, 251, 246, 0.92);
   --card-line: rgba(90, 96, 84, 0.18);
@@ -27,7 +27,7 @@
     --ink:     #D9D6CB;
     --label:   #A7AC9E;
     --rust:    #E06B3B;
-    --neutral: #7A7F74;   /* balanced loss/gain within an aggregate */
+    --neutral: #8A6248;   /* stable or balanced evidence: warm brown */
     --teal:    #4AA894;
     --card-bg: rgba(24, 27, 23, 0.90);
     --card-line: rgba(200, 205, 190, 0.16);
