@@ -170,8 +170,10 @@ function hexRgb(hex) {
 
 function changeAlphaFloor(zoom) {
   if (zoom <= 5) return 30;
-  if (zoom <= 10) return 45;
-  return ({ 11: 95, 12: 180, 13: 210, 14: 255 }[zoom] || 255);
+  return ({
+    6: 45, 7: 55, 8: 70, 9: 95, 10: 120,
+    11: 150, 12: 180, 13: 210, 14: 255,
+  }[zoom] || 255);
 }
 
 // Overview pixels aggregate many z14 cells. At national zooms, tiny nonzero
@@ -181,8 +183,9 @@ function changeAlphaFloor(zoom) {
 function minimumSignedEvidence(zoom) {
   if (zoom <= 5) return 128;
   if (zoom <= 6) return 96;
-  if (zoom <= 8) return 72;
-  if (zoom <= 10) return 36;
+  if (zoom <= 7) return 48;
+  if (zoom <= 8) return 24;
+  if (zoom <= 10) return 15;
   return 1;
 }
 
