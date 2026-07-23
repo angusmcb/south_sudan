@@ -38,12 +38,13 @@ applies the active light/dark palette and hands a transparent styled PNG to
 MapLibre. At z3–14 the channels are saturating aggregates that preserve sparse
 change. The aggregate saturation is constant through z13 and scales with pixel
 area at z14, while the browser raises the minimum opacity of nonzero change
-toward detail. Weak aggregate change density at z3–10 is shown as brown context
-instead of colouring almost every settlement red or green. At z12–14 a small
+toward detail. Weak aggregate change density at z3–10 is suppressed instead of
+colouring almost every settlement red or green. The stable channel has its own
+overview density threshold, so brown context marks credible settlement
+concentrations rather than scattered isolated source cells. At z12–14 a small
 screen-space halo expands red/green evidence without changing the underlying
 measurements, so individual changed cells do not disappear as their internal
-gaps resolve. Stable and weak overview change use a darker warm-brown underlay,
-clearly separated from empty land.
+gaps resolve.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
 50 km buffer. War has 39,303 addressed tiles (6.79 MiB) and post-agreement

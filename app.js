@@ -185,8 +185,20 @@ function minimumSignedEvidence(zoom) {
 }
 
 function stableAlphaFloor(zoom) {
-  if (zoom <= 10) return 55;
+  if (zoom <= 10) return 45;
   return ({ 11: 70, 12: 90, 13: 115, 14: 145 }[zoom] || 145);
+}
+
+// The B channel also contains scattered low-density building evidence. Hide
+// that noise at overview zooms so brown means a credible settlement
+// concentration, not simply "at least one source cell somewhere in this
+// aggregate".
+function minimumStableEvidence(zoom) {
+  if (zoom <= 5) return 128;
+  if (zoom <= 6) return 64;
+  if (zoom <= 8) return 32;
+  if (zoom <= 10) return 12;
+  return 1;
 }
 
 function changeHaloStyle(zoom) {
@@ -210,6 +222,7 @@ async function styleEvidenceTile(rawBytes, zoom) {
   const mixed = hexRgb(t.mixed), stableColour = hexRgb(t.underlay);
   const haloStyle = changeHaloStyle(zoom);
   const signedEvidenceFloor = minimumSignedEvidence(zoom);
+  const stableEvidenceFloor = minimumStableEvidence(zoom);
   let haloLoss = null, haloGain = null;
   if (haloStyle) {
     const pixelCount = canvas.width * canvas.height;
@@ -253,9 +266,9 @@ async function styleEvidenceTile(rawBytes, zoom) {
       image.data[offset + 3] = isHalo
         ? Math.round(haloStyle.alpha + (220 - haloStyle.alpha) * evidence)
         : Math.round(floor + (255 - floor) * evidence);
-    } else if (stable || strongestSignedEvidence) {
+    } else if (stable >= stableEvidenceFloor) {
       const floor = stableAlphaFloor(zoom);
-      const evidence = Math.max(stable, strongestSignedEvidence) / 255;
+      const evidence = stable / 255;
       image.data[offset] = stableColour[0];
       image.data[offset + 1] = stableColour[1];
       image.data[offset + 2] = stableColour[2];
