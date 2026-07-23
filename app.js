@@ -5,9 +5,10 @@
  * fly to example places, keep all
  * view state in the URL hash. No build step, no framework.
  *
- * The Yei evidence is fetched as sparse PMTiles from public GCS. Tile RGB is
- * data (loss/gain/stable), not colour: the custom evidence protocol applies the
- * current browser theme before MapLibre receives each raster tile. */
+ * National evidence, including a 50 km border buffer, is fetched as sparse
+ * PMTiles from public GCS. Tile RGB is data (loss/gain/stable), not colour:
+ * the custom evidence protocol applies the current browser theme before
+ * MapLibre receives each raster tile. */
 
 "use strict";
 
@@ -31,7 +32,7 @@ const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
 
 // ---- data source: immutable public release, raw evidence styled below ----
 const TILE_RELEASE_URL =
-  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/yei-wide-z14-v1/tiles";
+  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/2026-07-ssd-obt-buffer50-z14-v1/tiles";
 
 // ---- periods: each immutable archive shares the same RGB evidence contract ----
 const PERIODS = {
@@ -42,7 +43,7 @@ const DEFAULT_PERIOD = "war";
 
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
-const HOME_BOUNDS = [[23.3, 3.4], [36.1, 12.3]];
+const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -221,7 +222,7 @@ function loadEvidence(period) {
   if (map.getSource("building-evidence")) map.removeSource("building-evidence");
   map.addSource("building-evidence", {
     type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
-    bounds: [30.1910424704787, 3.697656221127962, 31.40444909626827, 4.8075649502085875],
+    bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
     tiles: [`evidence://${period}/{z}/{x}/{y}?theme=${themeName}`],
     attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
   });

@@ -15,12 +15,13 @@ loads JSON and PMTiles with HTTP requests.
 
 ## Current data
 
-The viewer reads the public wider Yei sparse-area test release directly from:
+The viewer reads the immutable national South Sudan release, including a
+50 km border buffer for nearby refugee settlements, directly from:
 
 ```text
 https://storage.googleapis.com/south-sudan-buildings-tiles/
-  releases/yei-wide-z14-v1/tiles/war.pmtiles
-  releases/yei-wide-z14-v1/tiles/post.pmtiles
+  releases/2026-07-ssd-obt-buffer50-z14-v1/tiles/war.pmtiles
+  releases/2026-07-ssd-obt-buffer50-z14-v1/tiles/post.pmtiles
 ```
 
 The bucket permits anonymous reads and cross-origin `GET`/`HEAD` range
@@ -34,17 +35,17 @@ Each lossless WebP tile contains data channels rather than final colours:
 
 `app.js` retrieves sparse tiles through the PMTiles client, decodes the WebP,
 applies the active light/dark palette and hands a transparent styled PNG to
-MapLibre. At z6–15 the channels are saturating aggregates that preserve sparse
-change; z16 is binary building-scale detail. The aggregate saturation is
-constant through z13 and scales with pixel area at z14–15, while the browser
-raises the minimum opacity of nonzero change toward detail. Dense changed
-settlements therefore retain visual strength as their internal gaps appear.
-Stable buildings use a quiet grey underlay.
+MapLibre. At z3–14 the channels are saturating aggregates that preserve sparse
+change. The aggregate saturation is constant through z13 and scales with pixel
+area at z14, while the browser raises the minimum opacity of nonzero change
+toward detail. Dense changed settlements therefore retain visual strength as
+their internal gaps appear. Stable buildings use a quiet grey underlay.
 
-The current wider benchmark covers about 16,450 km² around Yei, including
-large rural gaps. Its aggregate-only z3–14 archives total 2.74 MiB; empty
-tiles are absent. Stable evidence has a browser-side opacity floor at every
-zoom so unchanged settlement remains visible.
+The current aggregate-only z3–14 archives cover all of South Sudan and its
+50 km buffer. War has 39,303 addressed tiles (6.79 MiB) and post-agreement
+has 44,996 (8.03 MiB); empty tiles are absent. Stable evidence has a
+browser-side opacity floor at every zoom so unchanged settlement remains
+visible.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
