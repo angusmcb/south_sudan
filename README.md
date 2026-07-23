@@ -20,8 +20,8 @@ The viewer reads the immutable national South Sudan release, including a
 
 ```text
 https://storage.googleapis.com/south-sudan-buildings-tiles/
-  releases/2026-07-ssd-obt-buffer50-z14-v1/tiles/war.pmtiles
-  releases/2026-07-ssd-obt-buffer50-z14-v1/tiles/post.pmtiles
+  releases/2026-07-ssd-obt-buffer50-z14-v2/tiles/war.pmtiles
+  releases/2026-07-ssd-obt-buffer50-z14-v2/tiles/post.pmtiles
 ```
 
 The bucket permits anonymous reads and cross-origin `GET`/`HEAD` range
@@ -33,24 +33,30 @@ Each lossless WebP tile contains data channels rather than final colours:
 - G: significant gain evidence;
 - B: unchanged/stable building evidence.
 
+The z14 annual rasters are mean-pooled from the native 4 m Open Buildings
+grid onto 9.5546 m cells. The 30% analytic threshold is therefore rescaled by
+pixel area to 5% before loss/gain/stable classification; applying 30% directly
+to the coarser mean raster incorrectly fragments building evidence.
+
 `app.js` retrieves sparse tiles through the PMTiles client, decodes the WebP,
 applies the active light/dark palette and hands a transparent styled PNG to
 MapLibre. At z3–14 the channels are saturating aggregates that preserve sparse
-change. The aggregate saturation is constant through z13 and scales with pixel
-area at z14, while the browser raises the minimum opacity of nonzero change
-toward detail. Weak aggregate change density at z3–8 is progressively
-suppressed instead of colouring almost every settlement red or green. From z9,
-the signed-evidence floor matches the archive's smallest encoded nonzero value
-and its display opacity rises at every zoom, so a change cluster does not turn
-neutral as its aggregate splits into finer pixels. The stable channel has its
-own overview density threshold, so brown context marks credible settlement
-concentrations rather than scattered isolated source cells. At z12–14 a small
-screen-space halo expands red/green evidence without changing the underlying
-measurements.
+change. Below z13, the saturation count doubles per coarser zoom so dense loss
+and gain remain distinguishable instead of both clipping to 255; at z14 it
+scales with pixel area to retain detail. The browser raises the minimum opacity
+of nonzero change toward detail. Weak aggregate change density at z3–8 is
+progressively suppressed instead of colouring almost every settlement red or
+green. From z9, the signed-evidence floor matches the archive's smallest
+encoded nonzero value and its display opacity rises at every zoom, so a change
+cluster does not turn neutral as its aggregate splits into finer pixels. The
+stable channel has its own overview density threshold, so brown context marks
+credible settlement concentrations rather than scattered isolated source
+cells. At z12–14 a small screen-space halo expands red/green evidence without
+changing the underlying measurements.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
-50 km buffer. War has 39,303 addressed tiles (6.79 MiB) and post-agreement
-has 44,996 (8.03 MiB); empty tiles are absent. Stable evidence has a
+50 km buffer. War has 124,119 addressed tiles (38.94 MiB) and post-agreement
+has 132,142 (42.92 MiB); empty tiles are absent. Stable evidence has a
 browser-side opacity floor at every zoom so unchanged settlement remains
 visible.
 

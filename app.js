@@ -32,7 +32,7 @@ const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
 
 // ---- data source: immutable public release, raw evidence styled below ----
 const TILE_RELEASE_URL =
-  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/2026-07-ssd-obt-buffer50-z14-v1/tiles";
+  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/2026-07-ssd-obt-buffer50-z14-v2/tiles";
 
 // ---- periods: each immutable archive shares the same RGB evidence contract ----
 const PERIODS = {
@@ -169,9 +169,9 @@ function hexRgb(hex) {
 }
 
 function changeAlphaFloor(zoom) {
-  if (zoom <= 5) return 30;
+  if (zoom <= 5) return 60;
   return ({
-    6: 45, 7: 55, 8: 70, 9: 95, 10: 120,
+    6: 70, 7: 80, 8: 90, 9: 105, 10: 125,
     11: 150, 12: 180, 13: 210, 14: 255,
   }[zoom] || 255);
 }
@@ -181,11 +181,10 @@ function changeAlphaFloor(zoom) {
 // weak overview density as neutral context; detail zooms retain every changed
 // cell from the evidence archive.
 function minimumSignedEvidence(zoom) {
-  if (zoom <= 5) return 128;
-  if (zoom <= 6) return 96;
-  if (zoom <= 7) return 48;
-  if (zoom <= 8) return 24;
-  if (zoom <= 10) return 15;
+  if (zoom <= 5) return 30;
+  if (zoom <= 6) return 24;
+  if (zoom <= 7) return 16;
+  if (zoom <= 8) return 8;
   return 1;
 }
 
@@ -199,10 +198,11 @@ function stableAlphaFloor(zoom) {
 // concentration, not simply "at least one source cell somewhere in this
 // aggregate".
 function minimumStableEvidence(zoom) {
-  if (zoom <= 5) return 128;
-  if (zoom <= 6) return 64;
-  if (zoom <= 8) return 32;
-  if (zoom <= 10) return 12;
+  if (zoom <= 5) return 16;
+  if (zoom <= 6) return 12;
+  if (zoom <= 7) return 8;
+  if (zoom <= 8) return 4;
+  if (zoom <= 9) return 2;
   return 1;
 }
 
