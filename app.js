@@ -15,15 +15,15 @@
 // ---- palette (mirrors style.css / docs §4), theme-aware ----
 // The map background/lines/ramp are set from JS because a MapLibre style is
 // static JSON and can't follow prefers-color-scheme; the CSS chrome follows
-// the same OS signal, so the two stay in step. Stable/small change is a warm
-// brown, visually separate from empty land and from the rust/teal endpoints.
+// the same OS signal, so the two stay in step. Stable/balanced evidence is a
+// neutral warm grey, visually separate from empty land and the endpoints.
 const THEME = {
   light: {
-    land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#78563E", teal: "#2E7E72", underlay: "#60442F", mixed: "#78563E",
+    land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#918E82", teal: "#2E7E72", underlay: "#918E82", mixed: "#918E82",
     water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60"
   },
   dark: {
-    land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#8A6248", teal: "#4AA894", underlay: "#76533C", mixed: "#8A6248",
+    land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#9C9A8F", teal: "#4AA894", underlay: "#9C9A8F", mixed: "#9C9A8F",
     water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294"
   },
 };
@@ -195,15 +195,16 @@ function stableAlphaFloor(zoom) {
 }
 
 // The B channel also contains scattered low-density building evidence. Hide
-// that noise at overview zooms so brown means a credible settlement
+// that noise at overview zooms so neutral context means a credible settlement
 // concentration, not simply "at least one source cell somewhere in this
 // aggregate".
 function minimumStableEvidence(zoom) {
   if (zoom <= 5) return 16;
   if (zoom <= 6) return 12;
-  if (zoom <= 8) return 16;
-  if (zoom <= 9) return 12;
-  if (zoom <= 10) return 6;
+  if (zoom <= 7) return 12;
+  if (zoom <= 8) return 10;
+  if (zoom <= 9) return 8;
+  if (zoom <= 10) return 4;
   return 1;
 }
 
