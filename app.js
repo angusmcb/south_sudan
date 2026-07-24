@@ -29,12 +29,19 @@ const THEME = {
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const SETTINGS_KEY = "ssd-viewer-settings-v1";
-const displaySettings = { theme: null, basemap: "minimal" };
+const displaySettings = {
+  theme: null,
+  basemap: "minimal",
+  boundaries: true,
+  rivers: true,
+};
 try {
   const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
   if (saved.theme === "light" || saved.theme === "dark") displaySettings.theme = saved.theme;
   if (["minimal", "openfreemap", "satellite"].includes(saved.basemap))
     displaySettings.basemap = saved.basemap;
+  if (typeof saved.boundaries === "boolean") displaySettings.boundaries = saved.boundaries;
+  if (typeof saved.rivers === "boolean") displaySettings.rivers = saved.rivers;
 } catch (_) {
   // A blocked or malformed local setting should never prevent the map loading.
 }
@@ -263,6 +270,7 @@ async function loadOpenFreeMap(activeTheme, request) {
     .filter((layer) =>
       layer.source === "openmaptiles"
       && layer.type !== "symbol"
+      && layer.id !== "water"
       && !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern")))
     .forEach((layer) => {
       const copy = structuredClone(layer);
@@ -272,6 +280,7 @@ async function loadOpenFreeMap(activeTheme, request) {
       openFreeMapLayerIds.push(copy.id);
     });
   openFreeMapTheme = activeTheme;
+  applyContextVisibility();
 }
 
 function ensureSatellite() {
@@ -300,10 +309,31 @@ function ensureSatellite() {
 function syncSettingsControls() {
   const openFreeMap = document.getElementById("setting-openfreemap");
   const satellite = document.getElementById("setting-satellite");
+  const boundaries = document.getElementById("setting-boundaries");
+  const rivers = document.getElementById("setting-rivers");
   if (openFreeMap) openFreeMap.checked = displaySettings.basemap === "openfreemap";
   if (satellite) satellite.checked = displaySettings.basemap === "satellite";
+  if (boundaries) boundaries.checked = displaySettings.boundaries;
+  if (rivers) rivers.checked = displaySettings.rivers;
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.themeChoice === themeName()));
+  });
+}
+
+function applyContextVisibility() {
+  ["admin-land", "admin-disputed"].forEach((id) => {
+    if (map.getLayer(id)) map.setLayoutProperty(
+      id, "visibility", displaySettings.boundaries ? "visible" : "none");
+  });
+  if (map.getLayer("rivers")) map.setLayoutProperty(
+    "rivers", "visibility", displaySettings.rivers ? "visible" : "none");
+  openFreeMapLayerIds.forEach((id) => {
+    const isBoundary = id.startsWith("openfreemap-boundary");
+    const isRiver = id.startsWith("openfreemap-waterway");
+    if (isBoundary || isRiver) {
+      const visible = isBoundary ? displaySettings.boundaries : displaySettings.rivers;
+      map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+    }
   });
 }
 
@@ -320,6 +350,7 @@ function applyBasemap() {
   } else {
     removeOpenFreeMap();
   }
+  applyContextVisibility();
   syncSettingsControls();
 }
 
@@ -336,6 +367,14 @@ function chooseTheme(nextTheme) {
   displaySettings.theme = nextTheme;
   saveDisplaySettings();
   applyTheme();
+  syncSettingsControls();
+}
+
+function chooseContextLayer(key) {
+  if (key !== "boundaries" && key !== "rivers") return;
+  displaySettings[key] = !displaySettings[key];
+  saveDisplaySettings();
+  applyContextVisibility();
   syncSettingsControls();
 }
 
@@ -531,7 +570,7 @@ async function styleEvidenceTiles(rawBytes, zoom) {
   const unchanged = unchangedContext.createImageData(raw.width, raw.height);
   const change = changeContext.createImageData(raw.width, raw.height);
   styleUnchangedImage(raw, unchanged, zoom, stableColour);
-  if (zoom >= 11) {
+  if (zoom >= 10) {
     styleConsensusChange(raw, change, zoom, { rust, teal });
   } else {
     styleOverviewChange(raw, change, zoom, { rust, teal });
@@ -894,6 +933,10 @@ function wireChrome() {
     .addEventListener("change", () => chooseBasemap("openfreemap"));
   document.getElementById("setting-satellite")
     .addEventListener("change", () => chooseBasemap("satellite"));
+  document.getElementById("setting-boundaries")
+    .addEventListener("change", () => chooseContextLayer("boundaries"));
+  document.getElementById("setting-rivers")
+    .addEventListener("change", () => chooseContextLayer("rivers"));
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.addEventListener("click", () => chooseTheme(button.dataset.themeChoice));
   });

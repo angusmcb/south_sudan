@@ -17,7 +17,7 @@
   <link rel="preload" as="fetch" href="data/africa-mask.geojson" crossorigin="anonymous" />
   <link rel="preload" as="fetch" href="data/rivers.geojson" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260724-11" />
+  <link rel="stylesheet" href="style.css?v=20260724-12" />
 </head>
 
 <body>
@@ -84,6 +84,14 @@
       <span>Satellite image</span>
       <input id="setting-satellite" type="checkbox" />
     </label>
+    <label class="settings-row">
+      <span>Boundaries</span>
+      <input id="setting-boundaries" type="checkbox" />
+    </label>
+    <label class="settings-row">
+      <span>Rivers</span>
+      <input id="setting-rivers" type="checkbox" />
+    </label>
     <div class="settings-theme-label">Theme</div>
     <div class="settings-theme" role="radiogroup" aria-label="Map theme">
       <button type="button" role="radio" data-theme-choice="light">Light</button>
@@ -115,7 +123,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260724-11"></script>
+  <script defer src="app.js?v=20260724-12"></script>
 </body>
 
 </html>

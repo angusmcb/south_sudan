@@ -48,12 +48,13 @@ pixel area to retain detail. Weak aggregate change density at z3–10 is
 progressively suppressed instead of colouring almost every settlement red or
 green.
 
-At z11–14, the change overlay uses a local consensus footprint equivalent to
+At z10–14, the change overlay uses decoded source-cell counts and a local
+consensus footprint equivalent to
 9×9 z14 cells (about 86 m). Because every pyramid level uses a different
 nonlinear saturation constant, the browser first inverts that encoding back to
 approximate source-cell counts. It then requires at least 12 changed source
-cells and a 55% directional majority. The window is 1×1, 3×3, 5×5 or 9×9 as
-the source changes from z11 to z14, keeping its ground footprint and units
+cells and a 55% directional majority. The window is 1×1 at z10–11, then 3×3,
+5×5 and 9×9 through z14, keeping its ground footprint and units
 approximately stable across zoom transitions. Inconclusive neighbourhoods are
 transparent, revealing the neutral underlay; no display halo expands individual
 red or green cells.
@@ -73,9 +74,12 @@ while retaining both source caches.
 
 The small display-settings control can switch from the minimal committed
 background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
-World Imagery. The two contextual basemaps are mutually exclusive and always
-remain beneath the evidence layers. Light/dark selection recolours both the
-viewer chrome and evidence tiles and is stored locally in the browser.
+World Imagery. OpenFreeMap's polygon-water fill is omitted so broad wetland
+areas do not become a blue background. The two contextual basemaps are mutually
+exclusive and always remain beneath the evidence layers. Boundaries and rivers
+can be toggled independently across both the committed and OpenFreeMap context.
+Light/dark selection recolours both the viewer chrome and evidence tiles and is
+stored locally in the browser.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
