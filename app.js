@@ -228,6 +228,9 @@ const OPENFREEMAP_STYLES = {
   light: "https://tiles.openfreemap.org/styles/positron",
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
+const OPENFREEMAP_WATER_MIN_ZOOM = 8;
+const OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS =
+  new Set(["boundary_2", "boundary_disputed"]);
 const openFreeMapStyleCache = new Map();
 
 function evidenceAnchor() {
@@ -243,6 +246,19 @@ function removeOpenFreeMap() {
   openFreeMapLayerIds = [];
   if (map.getSource("openfreemap")) map.removeSource("openfreemap");
   openFreeMapTheme = null;
+}
+
+function openFreeMapSourceLayer(layer) {
+  return layer["source-layer"] || "";
+}
+
+function includeOpenFreeMapLayer(layer) {
+  const sourceLayer = openFreeMapSourceLayer(layer);
+  if (layer.source !== "openmaptiles" || layer.type === "symbol") return false;
+  if (layer.id === "park" || layer.id === "building") return false;
+  if (sourceLayer === "boundary"
+      && !OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS.has(layer.id)) return false;
+  return !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern"));
 }
 
 async function loadOpenFreeMap(activeTheme, request) {
@@ -267,16 +283,14 @@ async function loadOpenFreeMap(activeTheme, request) {
   map.addSource("openfreemap", source);
   const anchor = evidenceAnchor();
   style.layers
-    .filter((layer) =>
-      layer.source === "openmaptiles"
-      && layer.type !== "symbol"
-      && layer.id !== "park"
-      && layer.id !== "building"
-      && !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern")))
+    .filter(includeOpenFreeMapLayer)
     .forEach((layer) => {
       const copy = structuredClone(layer);
       copy.id = `openfreemap-${layer.id}`;
       copy.source = "openfreemap";
+      if (["water", "waterway"].includes(openFreeMapSourceLayer(copy))) {
+        copy.minzoom = Math.max(copy.minzoom || 0, OPENFREEMAP_WATER_MIN_ZOOM);
+      }
       map.addLayer(copy, anchor);
       openFreeMapLayerIds.push(copy.id);
     });

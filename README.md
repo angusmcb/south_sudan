@@ -75,10 +75,11 @@ while retaining both source caches.
 
 The small display-settings control can switch from the minimal committed
 background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
-World Imagery. OpenFreeMap water polygons and linework are retained, while its
-protected-area and building fills are omitted to prevent broad coloured areas
-or building polygons competing with the evidence. The two contextual basemaps
-are mutually exclusive and always remain beneath the evidence layers.
+World Imagery. OpenFreeMap water polygons and linework appear from zoom 8,
+while its internal administrative boundaries, protected-area fill and building
+fill are omitted. International and disputed-country boundary lines remain.
+The two contextual basemaps are mutually exclusive and always remain beneath
+the evidence layers.
 Boundaries and rivers toggle only this viewer's bundled Natural Earth GeoJSON;
 they do not modify OpenFreeMap. Light/dark selection recolours both the viewer
 chrome and evidence tiles and is stored locally in the browser.
@@ -86,6 +87,33 @@ chrome and evidence tiles and is stored locally in the browser.
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
 context statement, verification status, and linked area-specific sources.
+
+## Experimenting with the change visualisation
+
+Visual styling happens in `app.js` after the lossless WebP data tile is decoded,
+so these experiments do **not** require rebuilding or republishing the PMTiles.
+Run the local server above, edit `app.js`, then hard-refresh the page. Keep the
+same place and zoom in the URL hash when comparing variants.
+
+The main controls are:
+
+| Control | Location | Effect |
+| --- | --- | --- |
+| Change colours | `THEME.light.rust` / `.teal` and the matching dark values | Endpoint colours for loss and gain. |
+| Unchanged colour | `THEME.*.underlay` | Separate neutral settlement underlay. |
+| 9×9 footprint | `targetDiameter` in `styleConsensusChange()` | Ground area used to decide the local direction. Increase `9` for smoother, broader evidence; decrease it for more detail/noise. |
+| Minimum change support | `12 / 81` in `styleConsensusChange()` | Required changed-cell density. Increase `12` to hide small changes and errors; decrease it to reveal weaker changes. Keep `81` equal to 9×9 if the footprint stays 9. |
+| Directional majority | `dominance < 0.55` in `styleConsensusChange()` | How decisive loss or gain must be. Increase toward 1 for only very one-sided change; decrease toward 0.5 for more coverage. |
+| Change opacity | `changeAlphaFloor()` and `directionalDensity * 4` | Minimum opacity by zoom and how quickly dense evidence becomes opaque. |
+| Overview filtering | `minimumSignedEvidence()` | Suppresses weak red/green evidence at zooms below 9. |
+| Unchanged filtering | `minimumStableEvidence()` and `stableAlphaFloor()` | Controls where the neutral settlement layer appears and how strong it is. |
+| Consensus transition | `if (zoom >= 9)` in `styleEvidenceTiles()` | Zoom at which the local-window method replaces aggregate overview styling. |
+
+For a useful comparison sequence, test the same edit at Yei (clear loss),
+Rumbek (mixed/noisy urban signal), Aweil/Wau (diffuse rural settlement), and a
+sparse refugee-camp or border site. Capture each at zooms 8, 9, 10, 11, and
+13. A sound setting should add detail as one zooms in without reversing the
+dominant colour or turning uninhabited land into settlement.
 
 ## Publishing the website
 
