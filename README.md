@@ -48,13 +48,15 @@ pixel area to retain detail. Weak aggregate change density at z3–10 is
 progressively suppressed instead of colouring almost every settlement red or
 green.
 
-At z11–14, the change overlay uses a 9×9 local consensus window. At least 12
-changed cells must contribute, one direction must hold 55% of local signed
-evidence, and the winning mean evidence must meet a floor of 1 at z11–12 or 10
-at z13–14. Inconclusive neighbourhoods are transparent, revealing the neutral
-underlay; no display halo expands individual red or green cells. This favours
-spatially coherent change over isolated small changes and model errors while
-retaining distributed change on coarser detailed tiles.
+At z11–14, the change overlay uses a local consensus footprint equivalent to
+9×9 z14 cells (about 86 m). Because every pyramid level uses a different
+nonlinear saturation constant, the browser first inverts that encoding back to
+approximate source-cell counts. It then requires at least 12 changed source
+cells and a 55% directional majority. The window is 1×1, 3×3, 5×5 or 9×9 as
+the source changes from z11 to z14, keeping its ground footprint and units
+approximately stable across zoom transitions. Inconclusive neighbourhoods are
+transparent, revealing the neutral underlay; no display halo expands individual
+red or green cells.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
 50 km buffer. War has 124,119 addressed tiles (38.94 MiB) and post-agreement
@@ -68,6 +70,12 @@ complete archive—but effectively invisible layers warm the inactive period in
 parallel. The two display layers are recreated against the selected period's
 uniquely named sources, avoiding MapLibre's same-z/x/y raster-cache collision
 while retaining both source caches.
+
+The small display-settings control can switch from the minimal committed
+background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
+World Imagery. The two contextual basemaps are mutually exclusive and always
+remain beneath the evidence layers. Light/dark selection recolours both the
+viewer chrome and evidence tiles and is stored locally in the browser.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,

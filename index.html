@@ -17,7 +17,7 @@
   <link rel="preload" as="fetch" href="data/africa-mask.geojson" crossorigin="anonymous" />
   <link rel="preload" as="fetch" href="data/rivers.geojson" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260724-10" />
+  <link rel="stylesheet" href="style.css?v=20260724-11" />
 </head>
 
 <body>
@@ -70,6 +70,27 @@
     </div>
   </aside>
 
+  <!-- Experimental display controls. The launcher can be hidden for a
+       production presentation without removing the underlying capabilities. -->
+  <button class="card settings-toggle" id="settings-toggle" type="button"
+    aria-label="Map display settings" aria-expanded="false" aria-controls="settings-panel">⚙</button>
+  <aside class="card settings-panel" id="settings-panel" aria-label="Map display settings" hidden>
+    <div class="settings-heading">Display</div>
+    <label class="settings-row">
+      <span>OpenFreeMap</span>
+      <input id="setting-openfreemap" type="checkbox" />
+    </label>
+    <label class="settings-row">
+      <span>Satellite image</span>
+      <input id="setting-satellite" type="checkbox" />
+    </label>
+    <div class="settings-theme-label">Theme</div>
+    <div class="settings-theme" role="radiogroup" aria-label="Map theme">
+      <button type="button" role="radio" data-theme-choice="light">Light</button>
+      <button type="button" role="radio" data-theme-choice="dark">Dark</button>
+    </div>
+  </aside>
+
   <!-- About dialog -->
   <div class="modal-backdrop" id="about" hidden>
     <div class="card modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
@@ -94,7 +115,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260724-10"></script>
+  <script defer src="app.js?v=20260724-11"></script>
 </body>
 
 </html>

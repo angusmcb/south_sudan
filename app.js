@@ -28,7 +28,31 @@ const THEME = {
   },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
-const theme = () => (themeQuery.matches ? THEME.dark : THEME.light);
+const SETTINGS_KEY = "ssd-viewer-settings-v1";
+const displaySettings = { theme: null, basemap: "minimal" };
+try {
+  const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+  if (saved.theme === "light" || saved.theme === "dark") displaySettings.theme = saved.theme;
+  if (["minimal", "openfreemap", "satellite"].includes(saved.basemap))
+    displaySettings.basemap = saved.basemap;
+} catch (_) {
+  // A blocked or malformed local setting should never prevent the map loading.
+}
+const themeName = () => displaySettings.theme || (themeQuery.matches ? "dark" : "light");
+const theme = () => THEME[themeName()];
+
+function saveDisplaySettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(displaySettings));
+  } catch (_) {
+    // Storage is an optional convenience; the controls still work for this session.
+  }
+}
+
+function applyDocumentTheme() {
+  document.documentElement.dataset.theme = themeName();
+}
+applyDocumentTheme();
 
 // ---- data source: immutable public release, raw evidence styled below ----
 const TILE_RELEASE_URL =
@@ -48,6 +72,9 @@ const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
 let mapReady = false;
+let openFreeMapLayerIds = [];
+let openFreeMapTheme = null;
+let basemapRequest = 0;
 
 // Begin fetching page data immediately, in parallel with MapLibre's style and
 // source work. The map only consumes these promises once it is ready to add
@@ -65,8 +92,8 @@ if (window.pmtiles && window.maplibregl) {
   const styledCache = new Map();
 
   async function getStyledPair(period, z, x, y) {
-    const themeName = themeQuery.matches ? "dark" : "light";
-    const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
+    const activeTheme = themeName();
+    const cacheKey = `${period}/${z}/${x}/${y}/${activeTheme}`;
     if (!styledCache.has(cacheKey)) {
       const pending = (async () => {
         const response = await archives.get(period).getZxy(
@@ -155,6 +182,7 @@ map.on("load", () => {
   if (!fromHash) map.fitBounds(HOME_BOUNDS, { padding: 32, duration: 0 });
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)
   loadEvidence(state.period);
+  applyBasemap();
   loadTowns();
   ensurePlaceBoxes();           // examples.json may already be in (fetch races the style)
   if (state.example) selectExample(state.example, { instant: true });
@@ -165,9 +193,12 @@ map.on("moveend", writeHash);
 map.on("error", (e) => console.warn("map error:", e && e.error ? e.error.message : e));
 
 // Follow the OS light/dark preference at runtime (matches the CSS chrome).
-themeQuery.addEventListener("change", () => { if (mapReady) applyTheme(); });
+themeQuery.addEventListener("change", () => {
+  if (!displaySettings.theme && mapReady) applyTheme();
+});
 
 function applyTheme() {
+  applyDocumentTheme();
   const t = theme();
   if (map.getLayer("background")) map.setPaintProperty("background", "background-color", t.land);
   if (map.getLayer("africa-mask")) map.setPaintProperty("africa-mask", "fill-color", t.water);
@@ -179,7 +210,133 @@ function applyTheme() {
   if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
   loadEvidence(state.period);                     // recolour cached raw evidence for the new theme
+  if (displaySettings.basemap === "openfreemap") applyBasemap();
   map.triggerRepaint();                          // force a full redraw (avoid partial repaint on slow first paint)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Optional context basemaps                                                  */
+/* -------------------------------------------------------------------------- */
+const OPENFREEMAP_STYLES = {
+  light: "https://tiles.openfreemap.org/styles/positron",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+};
+const openFreeMapStyleCache = new Map();
+
+function evidenceAnchor() {
+  const layer = map.getStyle().layers.find((candidate) =>
+    candidate.id.startsWith("building-"));
+  return layer ? layer.id : "rivers";
+}
+
+function removeOpenFreeMap() {
+  openFreeMapLayerIds.slice().reverse().forEach((id) => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  openFreeMapLayerIds = [];
+  if (map.getSource("openfreemap")) map.removeSource("openfreemap");
+  openFreeMapTheme = null;
+}
+
+async function loadOpenFreeMap(activeTheme, request) {
+  if (openFreeMapTheme === activeTheme && openFreeMapLayerIds.length) return;
+  removeOpenFreeMap();
+  let pending = openFreeMapStyleCache.get(activeTheme);
+  if (!pending) {
+    pending = fetch(OPENFREEMAP_STYLES[activeTheme]).then((response) => {
+      if (!response.ok) throw new Error(`OpenFreeMap style request failed (${response.status})`);
+      return response.json();
+    }).catch((error) => {
+      openFreeMapStyleCache.delete(activeTheme);
+      throw error;
+    });
+    openFreeMapStyleCache.set(activeTheme, pending);
+  }
+  const style = await pending;
+  if (request !== basemapRequest || displaySettings.basemap !== "openfreemap") return;
+  const source = { ...style.sources.openmaptiles };
+  source.attribution =
+    'OpenFreeMap © OpenMapTiles · Data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>';
+  map.addSource("openfreemap", source);
+  const anchor = evidenceAnchor();
+  style.layers
+    .filter((layer) =>
+      layer.source === "openmaptiles"
+      && layer.type !== "symbol"
+      && !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern")))
+    .forEach((layer) => {
+      const copy = structuredClone(layer);
+      copy.id = `openfreemap-${layer.id}`;
+      copy.source = "openfreemap";
+      map.addLayer(copy, anchor);
+      openFreeMapLayerIds.push(copy.id);
+    });
+  openFreeMapTheme = activeTheme;
+}
+
+function ensureSatellite() {
+  if (!map.getSource("satellite")) {
+    map.addSource("satellite", {
+      type: "raster",
+      tileSize: 256,
+      maxzoom: 19,
+      tiles: [
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      attribution: "Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community",
+    });
+  }
+  if (!map.getLayer("satellite")) {
+    map.addLayer({
+      id: "satellite",
+      type: "raster",
+      source: "satellite",
+      layout: { visibility: "none" },
+      paint: { "raster-opacity": 0.9, "raster-fade-duration": 180 },
+    }, evidenceAnchor());
+  }
+}
+
+function syncSettingsControls() {
+  const openFreeMap = document.getElementById("setting-openfreemap");
+  const satellite = document.getElementById("setting-satellite");
+  if (openFreeMap) openFreeMap.checked = displaySettings.basemap === "openfreemap";
+  if (satellite) satellite.checked = displaySettings.basemap === "satellite";
+  document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.themeChoice === themeName()));
+  });
+}
+
+function applyBasemap() {
+  if (!mapReady) return;
+  const request = ++basemapRequest;
+  ensureSatellite();
+  map.setLayoutProperty(
+    "satellite", "visibility",
+    displaySettings.basemap === "satellite" ? "visible" : "none");
+  if (displaySettings.basemap === "openfreemap") {
+    loadOpenFreeMap(themeName(), request)
+      .catch((error) => console.warn("could not load OpenFreeMap background", error));
+  } else {
+    removeOpenFreeMap();
+  }
+  syncSettingsControls();
+}
+
+function chooseBasemap(mode) {
+  displaySettings.basemap =
+    displaySettings.basemap === mode ? "minimal" : mode;
+  saveDisplaySettings();
+  applyBasemap();
+}
+
+function chooseTheme(nextTheme) {
+  if (nextTheme !== "light" && nextTheme !== "dark") return;
+  if (displaySettings.theme === nextTheme) return;
+  displaySettings.theme = nextTheme;
+  saveDisplaySettings();
+  applyTheme();
+  syncSettingsControls();
 }
 
 async function canvasPngBytes(canvas) {
@@ -232,29 +389,42 @@ function minimumStableEvidence(zoom) {
   return 1;
 }
 
-function integralImages(image) {
+function changeSaturationForZoom(zoom) {
+  if (zoom < 13) return 16 * (2 ** (13 - zoom));
+  return 16 / (4 ** (zoom - 13));
+}
+
+function decodedEvidence(value, saturation) {
+  if (!value) return 0;
+  // Tiles encode count as 255 * (1 - exp(-count / saturation)).
+  // Half a byte below 255 gives saturated values a finite conservative
+  // lower bound while matching the inverse transform elsewhere.
+  const encoded = Math.min(value, 254.5);
+  return -saturation * Math.log1p(-encoded / 255);
+}
+
+function integralImages(image, zoom) {
   const { width, height } = image;
   const stride = width + 1;
   const size = stride * (height + 1);
-  const loss = new Uint32Array(size);
-  const gain = new Uint32Array(size);
-  const support = new Uint32Array(size);
+  const loss = new Float64Array(size);
+  const gain = new Float64Array(size);
+  const saturation = changeSaturationForZoom(zoom);
   for (let y = 0; y < height; y += 1) {
-    let rowLoss = 0, rowGain = 0, rowSupport = 0;
+    let rowLoss = 0, rowGain = 0;
     for (let x = 0; x < width; x += 1) {
       const source = (y * width + x) * 4;
-      const l = image.data[source], g = image.data[source + 1];
+      const l = decodedEvidence(image.data[source], saturation);
+      const g = decodedEvidence(image.data[source + 1], saturation);
       rowLoss += l;
       rowGain += g;
-      rowSupport += l || g ? 1 : 0;
       const target = (y + 1) * stride + x + 1;
       const above = y * stride + x + 1;
       loss[target] = loss[above] + rowLoss;
       gain[target] = gain[above] + rowGain;
-      support[target] = support[above] + rowSupport;
     }
   }
-  return { loss, gain, support, stride };
+  return { loss, gain, stride };
 }
 
 function boxSum(integral, stride, x0, y0, x1, y1) {
@@ -302,10 +472,16 @@ function styleOverviewChange(raw, output, zoom, colours) {
 
 function styleConsensusChange(raw, output, zoom, colours) {
   const { width, height } = raw;
-  const integral = integralImages(raw);
-  const evidenceFloor = zoom <= 12 ? 1 : 10;
+  const integral = integralImages(raw, zoom);
   const opacityFloor = changeAlphaFloor(zoom);
-  const radius = 4;
+  // Keep the filter footprint close to the selected 9×9 z14 neighbourhood
+  // (~86 m at South Sudan's latitude). Applying 9×9 independently to every
+  // pyramid level made its ground footprint double at each zoom-out, so the
+  // apparent direction could flip rather than merely become coarser.
+  const sourceScale = 2 ** Math.max(0, 14 - zoom);
+  const targetDiameter = 9 / sourceScale;
+  const diameter = Math.max(1, Math.round((targetDiameter - 1) / 2) * 2 + 1);
+  const radius = (diameter - 1) / 2;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const offset = (y * width + x) * 4;
@@ -313,11 +489,10 @@ function styleConsensusChange(raw, output, zoom, colours) {
       const x1 = Math.min(width, x + radius + 1), y1 = Math.min(height, y + radius + 1);
       const loss = boxSum(integral.loss, integral.stride, x0, y0, x1, y1);
       const gain = boxSum(integral.gain, integral.stride, x0, y0, x1, y1);
-      const support = boxSum(integral.support, integral.stride, x0, y0, x1, y1);
       const total = loss + gain;
       const dominance = total ? Math.abs(gain - loss) / total : 0;
-      const strongestMean = support ? Math.max(loss, gain) / support : 0;
-      if (support < 12 || strongestMean < evidenceFloor || dominance < 0.55) {
+      const strongest = Math.max(loss, gain);
+      if (total < 12 || dominance < 0.55) {
         output.data[offset + 3] = 0;
         continue;
       }
@@ -325,8 +500,10 @@ function styleConsensusChange(raw, output, zoom, colours) {
       output.data[offset] = colour[0];
       output.data[offset + 1] = colour[1];
       output.data[offset + 2] = colour[2];
+      const coveredSourceCells = (x1 - x0) * (y1 - y0) * sourceScale * sourceScale;
+      const directionalDensity = strongest / coveredSourceCells;
       output.data[offset + 3] = Math.round(
-        opacityFloor + (255 - opacityFloor) * Math.min(1, strongestMean / 255));
+        opacityFloor + (255 - opacityFloor) * Math.min(1, directionalDensity * 4));
     }
   }
 }
@@ -370,11 +547,11 @@ async function styleEvidenceTiles(rawBytes, zoom) {
 
 function loadEvidence(period) {
   if (!mapReady || !PERIODS[period]) return;
-  const themeName = themeQuery.matches ? "dark" : "light";
+  const activeTheme = themeName();
   const kinds = ["unchanged", "change"];
-  if (evidenceState && evidenceState.period === period && evidenceState.theme === themeName) return;
+  if (evidenceState && evidenceState.period === period && evidenceState.theme === activeTheme) return;
 
-  if (evidenceState && evidenceState.theme !== themeName) {
+  if (evidenceState && evidenceState.theme !== activeTheme) {
     kinds.forEach((kind) => {
       const layerId = `building-${kind}`;
       if (map.getLayer(layerId)) map.removeLayer(layerId);
@@ -397,7 +574,7 @@ function loadEvidence(period) {
         map.addSource(sourceId, {
           type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
           bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
-          tiles: [`${kind}-${key}://tiles/{z}/{x}/{y}?theme=${themeName}`],
+          tiles: [`${kind}-${key}://tiles/{z}/{x}/{y}?theme=${activeTheme}`],
           attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
         });
       }
@@ -423,12 +600,12 @@ function loadEvidence(period) {
       minzoom: 3, maxzoom: 14.5,
       paint: {
         "raster-opacity": 1,
-        "raster-fade-duration": 0,
+        "raster-fade-duration": 180,
         "raster-resampling": "nearest",
       },
     }, "rivers");
   });
-  evidenceState = { period, theme: themeName };
+  evidenceState = { period, theme: activeTheme };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -707,8 +884,28 @@ function wireChrome() {
   document.getElementById("about-close").addEventListener("click", () => (about.hidden = true));
   about.addEventListener("click", (e) => { if (e.target === about) about.hidden = true; });
 
+  const settingsToggle = document.getElementById("settings-toggle");
+  const settingsPanel = document.getElementById("settings-panel");
+  settingsToggle.addEventListener("click", () => {
+    settingsPanel.hidden = !settingsPanel.hidden;
+    settingsToggle.setAttribute("aria-expanded", String(!settingsPanel.hidden));
+  });
+  document.getElementById("setting-openfreemap")
+    .addEventListener("change", () => chooseBasemap("openfreemap"));
+  document.getElementById("setting-satellite")
+    .addEventListener("change", () => chooseBasemap("satellite"));
+  document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+    button.addEventListener("click", () => chooseTheme(button.dataset.themeChoice));
+  });
+  syncSettingsControls();
+
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { about.hidden = true; setPanel(null); }
+    if (e.key === "Escape") {
+      about.hidden = true;
+      settingsPanel.hidden = true;
+      settingsToggle.setAttribute("aria-expanded", "false");
+      setPanel(null);
+    }
   });
 }
 
