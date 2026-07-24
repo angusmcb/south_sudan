@@ -48,16 +48,17 @@ pixel area to retain detail. Weak aggregate change density at z3–10 is
 progressively suppressed instead of colouring almost every settlement red or
 green.
 
-At z10–14, the change overlay uses decoded source-cell counts and a local
+At z9–14, the change overlay uses decoded source-cell counts and a local
 consensus footprint equivalent to
 9×9 z14 cells (about 86 m). Because every pyramid level uses a different
 nonlinear saturation constant, the browser first inverts that encoding back to
 approximate source-cell counts. It then requires at least 12 changed source
-cells and a 55% directional majority. The window is 1×1 at z10–11, then 3×3,
-5×5 and 9×9 through z14, keeping its ground footprint and units
-approximately stable across zoom transitions. Inconclusive neighbourhoods are
-transparent, revealing the neutral underlay; no display halo expands individual
-red or green cells.
+cells at z14 density and a 55% directional majority. The window is 1×1 at
+z9–11, then 3×3, 5×5 and 9×9 through z14. The minimum changed-cell count scales
+with the number of finest-grid cells represented by that window, removing the
+easy/hard alternation between successive pyramid levels. Inconclusive
+neighbourhoods are transparent, revealing the neutral underlay; no display
+halo expands individual red or green cells.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
 50 km buffer. War has 124,119 addressed tiles (38.94 MiB) and post-agreement
@@ -74,12 +75,13 @@ while retaining both source caches.
 
 The small display-settings control can switch from the minimal committed
 background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
-World Imagery. OpenFreeMap's polygon-water fill is omitted so broad wetland
-areas do not become a blue background. The two contextual basemaps are mutually
-exclusive and always remain beneath the evidence layers. Boundaries and rivers
-can be toggled independently across both the committed and OpenFreeMap context.
-Light/dark selection recolours both the viewer chrome and evidence tiles and is
-stored locally in the browser.
+World Imagery. OpenFreeMap water polygons and linework are retained, while its
+protected-area and building fills are omitted to prevent broad coloured areas
+or building polygons competing with the evidence. The two contextual basemaps
+are mutually exclusive and always remain beneath the evidence layers.
+Boundaries and rivers toggle only this viewer's bundled Natural Earth GeoJSON;
+they do not modify OpenFreeMap. Light/dark selection recolours both the viewer
+chrome and evidence tiles and is stored locally in the browser.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,

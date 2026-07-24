@@ -270,7 +270,8 @@ async function loadOpenFreeMap(activeTheme, request) {
     .filter((layer) =>
       layer.source === "openmaptiles"
       && layer.type !== "symbol"
-      && layer.id !== "water"
+      && layer.id !== "park"
+      && layer.id !== "building"
       && !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern")))
     .forEach((layer) => {
       const copy = structuredClone(layer);
@@ -327,14 +328,6 @@ function applyContextVisibility() {
   });
   if (map.getLayer("rivers")) map.setLayoutProperty(
     "rivers", "visibility", displaySettings.rivers ? "visible" : "none");
-  openFreeMapLayerIds.forEach((id) => {
-    const isBoundary = id.startsWith("openfreemap-boundary");
-    const isRiver = id.startsWith("openfreemap-waterway");
-    if (isBoundary || isRiver) {
-      const visible = isBoundary ? displaySettings.boundaries : displaySettings.rivers;
-      map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
-    }
-  });
 }
 
 function applyBasemap() {
@@ -531,7 +524,9 @@ function styleConsensusChange(raw, output, zoom, colours) {
       const total = loss + gain;
       const dominance = total ? Math.abs(gain - loss) / total : 0;
       const strongest = Math.max(loss, gain);
-      if (total < 12 || dominance < 0.55) {
+      const coveredSourceCells = (x1 - x0) * (y1 - y0) * sourceScale * sourceScale;
+      const minimumChangedCells = coveredSourceCells * (12 / 81);
+      if (total < minimumChangedCells || dominance < 0.55) {
         output.data[offset + 3] = 0;
         continue;
       }
@@ -539,7 +534,6 @@ function styleConsensusChange(raw, output, zoom, colours) {
       output.data[offset] = colour[0];
       output.data[offset + 1] = colour[1];
       output.data[offset + 2] = colour[2];
-      const coveredSourceCells = (x1 - x0) * (y1 - y0) * sourceScale * sourceScale;
       const directionalDensity = strongest / coveredSourceCells;
       output.data[offset + 3] = Math.round(
         opacityFloor + (255 - opacityFloor) * Math.min(1, directionalDensity * 4));
@@ -570,7 +564,7 @@ async function styleEvidenceTiles(rawBytes, zoom) {
   const unchanged = unchangedContext.createImageData(raw.width, raw.height);
   const change = changeContext.createImageData(raw.width, raw.height);
   styleUnchangedImage(raw, unchanged, zoom, stableColour);
-  if (zoom >= 10) {
+  if (zoom >= 9) {
     styleConsensusChange(raw, change, zoom, { rust, teal });
   } else {
     styleOverviewChange(raw, change, zoom, { rust, teal });
