@@ -64,21 +64,45 @@ if (window.pmtiles && window.maplibregl) {
   ]));
   const styledCache = new Map();
 
-  Object.keys(PERIODS).forEach((period) => {
-    maplibregl.addProtocol(`evidence-${period}`, async (params, abortController) => {
-      const match = params.url.match(/^evidence-(?:war|post):\/\/tiles\/(\d+)\/(\d+)\/(\d+)/);
-      if (!match) throw new Error(`invalid evidence URL: ${params.url}`);
-      const [, z, x, y] = match;
-      const themeName = themeQuery.matches ? "dark" : "light";
-      const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
-      if (styledCache.has(cacheKey)) return { data: styledCache.get(cacheKey) };
-      const response = await archives.get(period).getZxy(
-        Number(z), Number(x), Number(y), abortController.signal);
-      if (!response) return { data: null };
-      const data = await styleEvidenceTile(response.data, Number(z));
-      styledCache.set(cacheKey, data);
+  async function getStyledPair(period, z, x, y) {
+    const themeName = themeQuery.matches ? "dark" : "light";
+    const cacheKey = `${period}/${z}/${x}/${y}/${themeName}`;
+    if (!styledCache.has(cacheKey)) {
+      const pending = (async () => {
+        const response = await archives.get(period).getZxy(
+          Number(z), Number(x), Number(y));
+        if (!response) return null;
+        const tiles = await styleEvidenceTiles(response.data, Number(z));
+        return {
+          ...tiles,
+          cacheControl: response.cacheControl,
+          expires: response.expires,
+        };
+      })().catch((error) => {
+        styledCache.delete(cacheKey);
+        throw error;
+      });
+      styledCache.set(cacheKey, pending);
       if (styledCache.size > 256) styledCache.delete(styledCache.keys().next().value);
-      return { data, cacheControl: response.cacheControl, expires: response.expires };
+    }
+    return styledCache.get(cacheKey);
+  }
+
+  Object.keys(PERIODS).forEach((period) => {
+    ["unchanged", "change"].forEach((kind) => {
+      maplibregl.addProtocol(`${kind}-${period}`, async (params, abortController) => {
+        const match = params.url.match(
+          /^(?:unchanged|change)-(?:war|post):\/\/tiles\/(\d+)\/(\d+)\/(\d+)/);
+        if (!match) throw new Error(`invalid evidence URL: ${params.url}`);
+        const [, z, x, y] = match;
+        const pair = await getStyledPair(period, z, x, y);
+        if (!pair) return { data: null };
+        return {
+          data: pair[kind],
+          cacheControl: pair.cacheControl,
+          expires: pair.expires,
+        };
+      });
     });
   });
 }
@@ -208,131 +232,202 @@ function minimumStableEvidence(zoom) {
   return 1;
 }
 
-function changeHaloStyle(zoom) {
-  if (zoom >= 14) return { radius: 2, alpha: 205 };
-  if (zoom >= 13) return { radius: 1, alpha: 180 };
-  if (zoom >= 12) return { radius: 1, alpha: 155 };
-  return null;
+function integralImages(image) {
+  const { width, height } = image;
+  const stride = width + 1;
+  const size = stride * (height + 1);
+  const loss = new Uint32Array(size);
+  const gain = new Uint32Array(size);
+  const support = new Uint32Array(size);
+  for (let y = 0; y < height; y += 1) {
+    let rowLoss = 0, rowGain = 0, rowSupport = 0;
+    for (let x = 0; x < width; x += 1) {
+      const source = (y * width + x) * 4;
+      const l = image.data[source], g = image.data[source + 1];
+      rowLoss += l;
+      rowGain += g;
+      rowSupport += l || g ? 1 : 0;
+      const target = (y + 1) * stride + x + 1;
+      const above = y * stride + x + 1;
+      loss[target] = loss[above] + rowLoss;
+      gain[target] = gain[above] + rowGain;
+      support[target] = support[above] + rowSupport;
+    }
+  }
+  return { loss, gain, support, stride };
 }
 
-async function styleEvidenceTile(rawBytes, zoom) {
+function boxSum(integral, stride, x0, y0, x1, y1) {
+  return integral[y1 * stride + x1]
+    - integral[y0 * stride + x1]
+    - integral[y1 * stride + x0]
+    + integral[y0 * stride + x0];
+}
+
+function styleUnchangedImage(raw, output, zoom, colour) {
+  const stableFloor = minimumStableEvidence(zoom);
+  const opacityFloor = stableAlphaFloor(zoom);
+  for (let offset = 0; offset < raw.data.length; offset += 4) {
+    const stable = raw.data[offset + 2];
+    if (stable < stableFloor) {
+      output.data[offset + 3] = 0;
+      continue;
+    }
+    output.data[offset] = colour[0];
+    output.data[offset + 1] = colour[1];
+    output.data[offset + 2] = colour[2];
+    output.data[offset + 3] = Math.round(
+      opacityFloor + (170 - opacityFloor) * stable / 255);
+  }
+}
+
+function styleOverviewChange(raw, output, zoom, colours) {
+  const evidenceFloor = minimumSignedEvidence(zoom);
+  const opacityFloor = changeAlphaFloor(zoom);
+  for (let offset = 0; offset < raw.data.length; offset += 4) {
+    const loss = raw.data[offset], gain = raw.data[offset + 1];
+    const strongest = Math.max(loss, gain);
+    if (strongest < evidenceFloor || loss === gain) {
+      output.data[offset + 3] = 0;
+      continue;
+    }
+    const colour = loss > gain ? colours.rust : colours.teal;
+    output.data[offset] = colour[0];
+    output.data[offset + 1] = colour[1];
+    output.data[offset + 2] = colour[2];
+    output.data[offset + 3] = Math.round(
+      opacityFloor + (255 - opacityFloor) * strongest / 255);
+  }
+}
+
+function styleConsensusChange(raw, output, zoom, colours) {
+  const { width, height } = raw;
+  const integral = integralImages(raw);
+  const evidenceFloor = zoom <= 12 ? 1 : 10;
+  const opacityFloor = changeAlphaFloor(zoom);
+  const radius = 4;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const x0 = Math.max(0, x - radius), y0 = Math.max(0, y - radius);
+      const x1 = Math.min(width, x + radius + 1), y1 = Math.min(height, y + radius + 1);
+      const loss = boxSum(integral.loss, integral.stride, x0, y0, x1, y1);
+      const gain = boxSum(integral.gain, integral.stride, x0, y0, x1, y1);
+      const support = boxSum(integral.support, integral.stride, x0, y0, x1, y1);
+      const total = loss + gain;
+      const dominance = total ? Math.abs(gain - loss) / total : 0;
+      const strongestMean = support ? Math.max(loss, gain) / support : 0;
+      if (support < 12 || strongestMean < evidenceFloor || dominance < 0.55) {
+        output.data[offset + 3] = 0;
+        continue;
+      }
+      const colour = loss > gain ? colours.rust : colours.teal;
+      output.data[offset] = colour[0];
+      output.data[offset + 1] = colour[1];
+      output.data[offset + 2] = colour[2];
+      output.data[offset + 3] = Math.round(
+        opacityFloor + (255 - opacityFloor) * Math.min(1, strongestMean / 255));
+    }
+  }
+}
+
+async function styleEvidenceTiles(rawBytes, zoom) {
   const bitmap = await createImageBitmap(new Blob([rawBytes], { type: "image/webp" }));
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  context.drawImage(bitmap, 0, 0);
+  const rawCanvas = document.createElement("canvas");
+  rawCanvas.width = bitmap.width;
+  rawCanvas.height = bitmap.height;
+  const rawContext = rawCanvas.getContext("2d", { willReadFrequently: true });
+  rawContext.drawImage(bitmap, 0, 0);
   bitmap.close();
-  const image = context.getImageData(0, 0, canvas.width, canvas.height);
+  const raw = rawContext.getImageData(0, 0, rawCanvas.width, rawCanvas.height);
   const t = theme();
   const rust = hexRgb(t.rust), teal = hexRgb(t.teal);
-  const mixed = hexRgb(t.mixed), stableColour = hexRgb(t.underlay);
-  const haloStyle = changeHaloStyle(zoom);
-  const signedEvidenceFloor = minimumSignedEvidence(zoom);
-  const stableEvidenceFloor = minimumStableEvidence(zoom);
-  let haloLoss = null, haloGain = null;
-  if (haloStyle) {
-    const pixelCount = canvas.width * canvas.height;
-    haloLoss = new Uint8Array(pixelCount);
-    haloGain = new Uint8Array(pixelCount);
-    for (let sourcePixel = 0; sourcePixel < pixelCount; sourcePixel += 1) {
-      const sourceOffset = sourcePixel * 4;
-      const loss = image.data[sourceOffset];
-      const gain = image.data[sourceOffset + 1];
-      if (!loss && !gain) continue;
-      const sourceX = sourcePixel % canvas.width;
-      const sourceY = Math.floor(sourcePixel / canvas.width);
-      for (let dy = -haloStyle.radius; dy <= haloStyle.radius; dy += 1) {
-        const targetY = sourceY + dy;
-        if (targetY < 0 || targetY >= canvas.height) continue;
-        for (let dx = -haloStyle.radius; dx <= haloStyle.radius; dx += 1) {
-          const targetX = sourceX + dx;
-          if (targetX < 0 || targetX >= canvas.width) continue;
-          const targetPixel = targetY * canvas.width + targetX;
-          haloLoss[targetPixel] = Math.max(haloLoss[targetPixel], loss);
-          haloGain[targetPixel] = Math.max(haloGain[targetPixel], gain);
-        }
-      }
-    }
+  const stableColour = hexRgb(t.underlay);
+  const unchangedCanvas = document.createElement("canvas");
+  const changeCanvas = document.createElement("canvas");
+  [unchangedCanvas, changeCanvas].forEach((canvas) => {
+    canvas.width = raw.width;
+    canvas.height = raw.height;
+  });
+  const unchangedContext = unchangedCanvas.getContext("2d");
+  const changeContext = changeCanvas.getContext("2d");
+  const unchanged = unchangedContext.createImageData(raw.width, raw.height);
+  const change = changeContext.createImageData(raw.width, raw.height);
+  styleUnchangedImage(raw, unchanged, zoom, stableColour);
+  if (zoom >= 11) {
+    styleConsensusChange(raw, change, zoom, { rust, teal });
+  } else {
+    styleOverviewChange(raw, change, zoom, { rust, teal });
   }
-  for (let offset = 0; offset < image.data.length; offset += 4) {
-    const loss = image.data[offset], gain = image.data[offset + 1];
-    const stable = image.data[offset + 2];
-    const pixel = offset / 4;
-    const shownLoss = loss || (haloLoss && haloLoss[pixel]) || 0;
-    const shownGain = gain || (haloGain && haloGain[pixel]) || 0;
-    const strongestSignedEvidence = Math.max(shownLoss, shownGain);
-    if (strongestSignedEvidence >= signedEvidenceFloor) {
-      const colour = shownLoss === shownGain ? mixed : shownLoss > shownGain ? rust : teal;
-      const floor = changeAlphaFloor(zoom);
-      const evidence = strongestSignedEvidence / 255;
-      const isHalo = !loss && !gain;
-      image.data[offset] = colour[0];
-      image.data[offset + 1] = colour[1];
-      image.data[offset + 2] = colour[2];
-      image.data[offset + 3] = isHalo
-        ? Math.round(haloStyle.alpha + (220 - haloStyle.alpha) * evidence)
-        : Math.round(floor + (255 - floor) * evidence);
-    } else if (stable >= stableEvidenceFloor) {
-      const floor = stableAlphaFloor(zoom);
-      const evidence = stable / 255;
-      image.data[offset] = stableColour[0];
-      image.data[offset + 1] = stableColour[1];
-      image.data[offset + 2] = stableColour[2];
-      image.data[offset + 3] = Math.round(floor + (170 - floor) * evidence);
-    } else {
-      image.data[offset + 3] = 0;
-    }
-  }
-  context.putImageData(image, 0, 0);
-  return canvasPngBytes(canvas);
+  unchangedContext.putImageData(unchanged, 0, 0);
+  changeContext.putImageData(change, 0, 0);
+  const [unchangedBytes, changeBytes] = await Promise.all([
+    canvasPngBytes(unchangedCanvas),
+    canvasPngBytes(changeCanvas),
+  ]);
+  return { unchanged: unchangedBytes, change: changeBytes };
 }
 
 function loadEvidence(period) {
   if (!mapReady || !PERIODS[period]) return;
   const themeName = themeQuery.matches ? "dark" : "light";
+  const kinds = ["unchanged", "change"];
   if (evidenceState && evidenceState.period === period && evidenceState.theme === themeName) return;
 
   if (evidenceState && evidenceState.theme !== themeName) {
-    if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
+    kinds.forEach((kind) => {
+      const layerId = `building-${kind}`;
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+    });
     Object.keys(PERIODS).forEach((key) => {
-      const prewarmId = `building-evidence-prewarm-${key}`;
-      const sourceId = `building-evidence-source-${key}`;
-      if (map.getLayer(prewarmId)) map.removeLayer(prewarmId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      kinds.forEach((kind) => {
+        const prewarmId = `building-${kind}-prewarm-${key}`;
+        const sourceId = `building-${kind}-source-${key}`;
+        if (map.getLayer(prewarmId)) map.removeLayer(prewarmId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      });
     });
   }
 
   Object.keys(PERIODS).forEach((key) => {
-    const sourceId = `building-evidence-source-${key}`;
-    const prewarmId = `building-evidence-prewarm-${key}`;
-    if (!map.getSource(sourceId)) {
-      map.addSource(sourceId, {
-        type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
-        bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
-        tiles: [`evidence-${key}://tiles/{z}/{x}/{y}?theme=${themeName}`],
-        attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
-      });
-    }
-    if (!map.getLayer(prewarmId)) {
-      map.addLayer({
-        id: prewarmId, type: "raster", source: sourceId,
-        minzoom: 3, maxzoom: 14.5,
-        paint: {
-          "raster-opacity": 0.001,
-          "raster-fade-duration": 0,
-          "raster-resampling": "nearest",
-        },
-      }, "rivers");
-    }
+    kinds.forEach((kind) => {
+      const sourceId = `building-${kind}-source-${key}`;
+      const prewarmId = `building-${kind}-prewarm-${key}`;
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, {
+          type: "raster", tileSize: 256, minzoom: 3, maxzoom: 14,
+          bounds: [22.9863167, 3.0423830, 36.3971901, 12.6861457],
+          tiles: [`${kind}-${key}://tiles/{z}/{x}/{y}?theme=${themeName}`],
+          attribution: "Building change © Google Open Buildings Temporal (CC BY 4.0)",
+        });
+      }
+      if (!map.getLayer(prewarmId)) {
+        map.addLayer({
+          id: prewarmId, type: "raster", source: sourceId,
+          minzoom: 3, maxzoom: 14.5,
+          paint: {
+            "raster-opacity": 0.001,
+            "raster-fade-duration": 0,
+            "raster-resampling": "nearest",
+          },
+        }, "rivers");
+      }
+    });
   });
 
-  if (map.getLayer("building-evidence")) map.removeLayer("building-evidence");
-  map.addLayer({
-    id: "building-evidence", type: "raster", source: `building-evidence-source-${period}`,
-    minzoom: 3, maxzoom: 14.5,
-    paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" },
-  }, "rivers");
+  kinds.forEach((kind) => {
+    const layerId = `building-${kind}`;
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    map.addLayer({
+      id: layerId, type: "raster", source: `building-${kind}-source-${period}`,
+      minzoom: 3, maxzoom: 14.5,
+      paint: {
+        "raster-opacity": 1,
+        "raster-fade-duration": 0,
+        "raster-resampling": "nearest",
+      },
+    }, "rivers");
+  });
   evidenceState = { period, theme: themeName };
 }
 

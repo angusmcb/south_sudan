@@ -17,7 +17,7 @@
   <link rel="preload" as="fetch" href="data/africa-mask.geojson" crossorigin="anonymous" />
   <link rel="preload" as="fetch" href="data/rivers.geojson" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260724-9" />
+  <link rel="stylesheet" href="style.css?v=20260724-10" />
 </head>
 
 <body>
@@ -59,10 +59,15 @@
 
   <!-- Legend -->
   <aside class="card legend" id="legend" aria-label="Legend">
+    <div class="legend-title">Significant change</div>
     <div class="legend-ramp" role="img"
-      aria-label="Diverging colour ramp from rust (built area lost) through neutral grey (stable or mixed evidence) to teal (built area gained)">
+      aria-label="Change overlay from rust (built area lost), through no clear direction, to teal (built area gained)">
     </div>
-    <div class="legend-ends"><span>Lost</span><span>Mixed</span><span>Gained</span></div>
+    <div class="legend-ends"><span>Lost</span><span>No clear direction</span><span>Gained</span></div>
+    <div class="legend-unchanged">
+      <span class="legend-unchanged-swatch" aria-hidden="true"></span>
+      <span>Unchanged settlement</span>
+    </div>
   </aside>
 
   <!-- About dialog -->
@@ -89,7 +94,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260724-9"></script>
+  <script defer src="app.js?v=20260724-10"></script>
 </body>
 
 </html>

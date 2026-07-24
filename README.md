@@ -38,22 +38,23 @@ grid onto 9.5546 m cells. The 30% analytic threshold is therefore rescaled by
 pixel area to 5% before loss/gain/stable classification; applying 30% directly
 to the coarser mean raster incorrectly fragments building evidence.
 
-`app.js` retrieves sparse tiles through the PMTiles client, decodes the WebP,
-applies the active light/dark palette and hands a transparent styled PNG to
-MapLibre. At z3–14 the channels are saturating aggregates that preserve sparse
-change. Below z13, the saturation count doubles per coarser zoom so dense loss
-and gain remain distinguishable instead of both clipping to 255; at z14 it
-scales with pixel area to retain detail. The browser raises the minimum opacity
-of nonzero change toward detail. Weak aggregate change density at z3–8 is
+`app.js` retrieves sparse tiles through the PMTiles client, decodes each WebP
+once, applies the active light/dark palette and hands two transparent styled
+PNGs to MapLibre: an unchanged-settlement underlay and a loss/gain overlay. At
+z3–14 the channels are saturating aggregates that preserve sparse change.
+Below z13, the saturation count doubles per coarser zoom so dense loss and gain
+remain distinguishable instead of both clipping to 255; at z14 it scales with
+pixel area to retain detail. Weak aggregate change density at z3–10 is
 progressively suppressed instead of colouring almost every settlement red or
-green. The z8–10 floors taper from regional density filtering into full detail
-at z11, so scattered rural cells do not form a city-like texture around Wau
-and Aweil. Display opacity rises at every zoom, so accepted change remains
-legible as aggregates split into finer pixels. The stable channel has its own,
-moderately lower overview density threshold, so neutral context remains visible
-around credible settlement concentrations without turning scattered isolated
-source cells into broad urban-looking areas. At z12–14 a small screen-space
-halo expands red/green evidence without changing the underlying measurements.
+green.
+
+At z11–14, the change overlay uses a 9×9 local consensus window. At least 12
+changed cells must contribute, one direction must hold 55% of local signed
+evidence, and the winning mean evidence must meet a floor of 1 at z11–12 or 10
+at z13–14. Inconclusive neighbourhoods are transparent, revealing the neutral
+underlay; no display halo expands individual red or green cells. This favours
+spatially coherent change over isolated small changes and model errors while
+retaining distributed change on coarser detailed tiles.
 
 The current aggregate-only z3–14 archives cover all of South Sudan and its
 50 km buffer. War has 124,119 addressed tiles (38.94 MiB) and post-agreement
@@ -61,11 +62,11 @@ has 132,142 (42.92 MiB); empty tiles are absent. Stable evidence has a
 browser-side opacity floor at every zoom so unchanged settlement remains
 visible.
 
-Both period sources are attached when the map loads. PMTiles still transfers
-only the byte ranges for tiles in the current viewport—not either complete
-archive—but an effectively invisible layer warms the inactive period in
-parallel. One display layer is recreated against the selected period's
-uniquely named source, avoiding MapLibre's same-z/x/y raster-cache collision
+Both periods' paired sources are attached when the map loads. PMTiles still
+transfers only byte ranges for tiles in the current viewport—not either
+complete archive—but effectively invisible layers warm the inactive period in
+parallel. The two display layers are recreated against the selected period's
+uniquely named sources, avoiding MapLibre's same-z/x/y raster-cache collision
 while retaining both source caches.
 
 The map has no persistent title card: the legend carries the product identity.

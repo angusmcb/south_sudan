@@ -15,7 +15,7 @@
   --card-line: rgba(90, 96, 84, 0.18);
   --shadow: 0 1px 2px rgba(40, 42, 34, 0.08), 0 6px 20px rgba(40, 42, 34, 0.12);
   --radius: 10px;
-  --ramp: linear-gradient(90deg, var(--rust) 0%, var(--neutral) 50%, var(--teal) 100%);
+  --ramp: linear-gradient(90deg, var(--rust) 0%, var(--paper) 50%, var(--teal) 100%);
   color-scheme: light;
 }
 
@@ -141,7 +141,10 @@ html, body {
 /* ---- legend ---- */
 .legend {
   bottom: 26px; left: 14px;
-  width: 236px; padding: 11px 13px;
+  width: 250px; padding: 11px 13px;
+}
+.legend-title {
+  color: var(--label); font-size: 10.5px; font-weight: 650; margin-bottom: 5px;
 }
 .legend-ramp {
   height: 12px; border-radius: 3px; background: var(--ramp);
@@ -150,6 +153,15 @@ html, body {
 .legend-ends {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--label); margin-top: 4px;
+}
+.legend-unchanged {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--label); font-size: 10.5px; margin-top: 8px;
+}
+.legend-unchanged-swatch {
+  width: 20px; height: 10px; border-radius: 2px;
+  background: var(--neutral); opacity: 0.72;
+  border: 1px solid var(--card-line);
 }
 .tag {
   display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700;
