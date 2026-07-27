@@ -90,13 +90,17 @@ viewer chrome and evidence tiles and is stored locally in the browser.
 
 ### Experimental pre-pruned Positron style
 
-`positron-ssd-experimental.json` is an unused experiment that copies the light
-OpenFreeMap Positron style while applying the viewer's current pruning,
-handoff, boundary and water styling ahead of time. It retains only background,
-water, waterway, transportation, aeroway and country-boundary layers. It has no
-symbols, sprites, glyphs, buildings, land use/cover, parks, other natural
-features or internal boundaries. `app.js` still downloads and filters the
-upstream style at runtime; the experiment does not change production.
+`positron-ssd-experimental.json` copies the light OpenFreeMap Positron style
+while applying the viewer's current pruning, handoff, boundary and water
+styling ahead of time. It retains only background, water, waterway,
+transportation, aeroway and country-boundary layers. It has no symbols,
+sprites, glyphs, buildings, land use/cover, parks, other natural features or
+internal boundaries.
+
+The upstream style remains the default. In light mode, open the display
+settings and enable **Pruned map style (test)** to switch to the local style at
+the current place and zoom. Disable it to compare against upstream Positron.
+Dark mode continues to use the upstream dark style.
 
 Rebuild it from a downloaded upstream style with:
 

@@ -34,6 +34,7 @@ const SETTINGS_KEY = "ssd-viewer-settings-v1";
 const displaySettings = {
   theme: null,
   basemap: "openfreemap",
+  contextStyle: "upstream",
 };
 try {
   const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
@@ -41,6 +42,7 @@ try {
   // "minimal" was the old manual mode. Both it and "openfreemap" now mean
   // automatic lightweight context with an OpenFreeMap handoff on zoom-in.
   if (saved.basemap === "satellite") displaySettings.basemap = "satellite";
+  if (saved.contextStyle === "pruned") displaySettings.contextStyle = "pruned";
 } catch (_) {
   // A blocked or malformed local setting should never prevent the map loading.
 }
@@ -74,7 +76,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-26";
+const CONTEXT_ASSET_VERSION = "20260727-27";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -239,6 +241,8 @@ const OPENFREEMAP_STYLES = {
   light: "https://tiles.openfreemap.org/styles/positron",
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
+const EXPERIMENTAL_POSITRON_STYLE =
+  `positron-ssd-experimental.json?v=${CONTEXT_ASSET_VERSION}`;
 const CONTEXT_HANDOFF = { load: 7.15, start: 7.25, end: 7.75 };
 const OPENFREEMAP_WATER_MIN_ZOOM = 8;
 const OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS =
@@ -322,18 +326,24 @@ function placeAnalysisMask() {
 }
 
 async function loadOpenFreeMap(activeTheme, request) {
-  if (openFreeMapTheme === activeTheme && openFreeMapLayerIds.length) return;
+  const usePrunedStyle =
+    activeTheme === "light" && displaySettings.contextStyle === "pruned";
+  const styleKey = `${activeTheme}:${usePrunedStyle ? "pruned" : "upstream"}`;
+  const styleUrl = usePrunedStyle
+    ? EXPERIMENTAL_POSITRON_STYLE
+    : OPENFREEMAP_STYLES[activeTheme];
+  if (openFreeMapTheme === styleKey && openFreeMapLayerIds.length) return;
   removeOpenFreeMap();
-  let pending = openFreeMapStyleCache.get(activeTheme);
+  let pending = openFreeMapStyleCache.get(styleKey);
   if (!pending) {
-    pending = fetch(OPENFREEMAP_STYLES[activeTheme]).then((response) => {
+    pending = fetch(styleUrl).then((response) => {
       if (!response.ok) throw new Error(`OpenFreeMap style request failed (${response.status})`);
       return response.json();
     }).catch((error) => {
-      openFreeMapStyleCache.delete(activeTheme);
+      openFreeMapStyleCache.delete(styleKey);
       throw error;
     });
-    openFreeMapStyleCache.set(activeTheme, pending);
+    openFreeMapStyleCache.set(styleKey, pending);
   }
   const style = await pending;
   if (request !== basemapRequest || displaySettings.basemap !== "openfreemap") return;
@@ -356,7 +366,7 @@ async function loadOpenFreeMap(activeTheme, request) {
       map.addLayer(copy, anchor);
       openFreeMapLayerIds.push(copy.id);
     });
-  openFreeMapTheme = activeTheme;
+  openFreeMapTheme = styleKey;
   placeAnalysisMask();
   applyContextVisibility();
 }
@@ -386,7 +396,12 @@ function ensureSatellite() {
 
 function syncSettingsControls() {
   const satellite = document.getElementById("setting-satellite");
+  const prunedStyle = document.getElementById("setting-pruned-style");
   if (satellite) satellite.checked = displaySettings.basemap === "satellite";
+  if (prunedStyle) {
+    prunedStyle.checked = displaySettings.contextStyle === "pruned";
+    prunedStyle.disabled = themeName() !== "light";
+  }
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.themeChoice === themeName()));
   });
@@ -424,6 +439,12 @@ function applyBasemap() {
 function chooseSatellite() {
   displaySettings.basemap =
     displaySettings.basemap === "satellite" ? "openfreemap" : "satellite";
+  saveDisplaySettings();
+  applyBasemap();
+}
+
+function chooseContextStyle(usePrunedStyle) {
+  displaySettings.contextStyle = usePrunedStyle ? "pruned" : "upstream";
   saveDisplaySettings();
   applyBasemap();
 }
@@ -991,6 +1012,8 @@ function wireChrome() {
   });
   document.getElementById("setting-satellite")
     .addEventListener("change", chooseSatellite);
+  document.getElementById("setting-pruned-style")
+    .addEventListener("change", (event) => chooseContextStyle(event.target.checked));
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.addEventListener("click", () => chooseTheme(button.dataset.themeChoice));
   });

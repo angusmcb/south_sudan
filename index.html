@@ -10,14 +10,14 @@
        subpath (…github.io/ssd_rs/), so a leading slash would break. -->
   <!-- Start the small static data downloads while the MapLibre scripts load.
        MapLibre and app.js reuse these same-origin cached responses later. -->
-  <link rel="preload" as="fetch" href="style.json?v=20260727-26" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/examples.json?v=20260727-26" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/towns.geojson?v=20260727-26" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson?v=20260727-26" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/africa-mask.geojson?v=20260727-26" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/analysis_extent.geojson?v=20260727-26" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="style.json?v=20260727-27" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/examples.json?v=20260727-27" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/towns.geojson?v=20260727-27" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson?v=20260727-27" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/africa-mask.geojson?v=20260727-27" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/analysis_extent.geojson?v=20260727-27" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260727-26" />
+  <link rel="stylesheet" href="style.css?v=20260727-27" />
 </head>
 
 <body>
@@ -84,6 +84,10 @@
       <span>Satellite image</span>
       <input id="setting-satellite" type="checkbox" />
     </label>
+    <label class="settings-row" title="Light mode only">
+      <span>Pruned map style (test)</span>
+      <input id="setting-pruned-style" type="checkbox" />
+    </label>
     <div class="settings-theme-label">Theme</div>
     <div class="settings-theme" role="radiogroup" aria-label="Map theme">
       <button type="button" role="radio" data-theme-choice="light">Light</button>
@@ -118,7 +122,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260727-26"></script>
+  <script defer src="app.js?v=20260727-27"></script>
 </body>
 
 </html>
