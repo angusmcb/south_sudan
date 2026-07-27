@@ -74,7 +74,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-30";
+const CONTEXT_ASSET_VERSION = "20260727-31";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -166,27 +166,6 @@ const map = new maplibregl.Map({
 });
 
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-map.addControl(new maplibregl.AttributionControl({
-  compact: true,
-  customAttribution: [
-    "Building change © Google Open Buildings Temporal (CC BY 4.0)",
-    "Context © OpenFreeMap · © OpenStreetMap contributors",
-    "Africa silhouette © Natural Earth (public domain)",
-    "Analysis extent © geoBoundaries (CC BY 4.0)",
-  ],
-}), "bottom-right");
-
-// Attribution: sit it below the zoom controls, collapsed by default (the ⓘ
-// toggles it). MapLibre adds it above the nav group and starts it open, so
-// move it to the end of the corner stack and clear the open state.
-(() => {
-  const corner = map.getContainer().querySelector(".maplibregl-ctrl-bottom-right");
-  const attrib = corner && corner.querySelector(".maplibregl-ctrl-attrib");
-  if (!attrib) return;
-  corner.appendChild(attrib);
-  attrib.removeAttribute("open");
-  attrib.classList.remove("maplibregl-compact-show");
-})();
 
 map.on("load", () => {
   mapReady = true;

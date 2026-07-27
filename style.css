@@ -85,10 +85,22 @@ html, body {
 .welcome-actions { display: flex; gap: 14px; margin-top: 14px; }
 .menu-toggle {
   top: 14px; left: 14px; width: 38px; height: 38px;
+  display: grid; place-items: center; padding: 0;
   border: 1px solid var(--card-line); color: var(--ink);
-  font: 20px/1 system-ui, sans-serif; cursor: pointer;
+  cursor: pointer;
 }
 .menu-toggle:hover { color: var(--teal); }
+.menu-icon,
+.menu-icon::before,
+.menu-icon::after {
+  display: block; width: 17px; height: 2px;
+  border-radius: 2px; background: currentColor;
+}
+.menu-icon { position: relative; }
+.menu-icon::before,
+.menu-icon::after { content: ""; position: absolute; left: 0; }
+.menu-icon::before { top: -5px; }
+.menu-icon::after { top: 5px; }
 .area-card h2 {
   margin: 1px 0 5px;
   font-size: 17px;
@@ -175,18 +187,23 @@ html, body {
 
 /* ---- display settings ---- */
 .settings-toggle {
-  right: 10px; bottom: 104px;
-  width: 30px; height: 30px; padding: 0;
-  border: 1px solid var(--card-line); color: var(--label);
+  right: 10px; bottom: 78px;
+  width: 29px; height: 29px; padding: 0;
+  display: grid; place-items: center;
+  background: #fff; border: 0; border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: none; color: #333;
   font: 15px/1 system-ui, sans-serif; cursor: pointer;
 }
 .settings-toggle:hover,
-.settings-toggle[aria-expanded="true"] { color: var(--teal); }
+.settings-toggle[aria-expanded="true"] {
+  background: #f2f2f2; color: #333;
+}
 .settings-toggle:focus-visible {
-  outline: 2px solid var(--teal); outline-offset: 2px;
+  outline: 2px solid #0096ff; outline-offset: 0;
 }
 .settings-panel {
-  right: 10px; bottom: 142px;
+  right: 10px; bottom: 116px;
   width: 190px; padding: 12px;
 }
 .settings-heading {
@@ -263,14 +280,18 @@ html, body {
 .modal {
   position: relative; max-width: 480px; max-height: calc(100vh - 40px);
   overflow-y: auto; padding: 22px 24px;
+  font-size: 13px;
 }
 .modal-close { position: absolute; top: 12px; right: 12px; }
 .modal h2 { margin: 0 0 10px; font-size: 18px; }
-.modal h3 { margin: 16px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--label); }
-.modal p, .modal li { font-size: 13px; }
+.modal h3 {
+  margin: 16px 0 6px; font-size: inherit; font-weight: 650;
+  color: var(--ink);
+}
+.modal p, .modal li { font-size: inherit; }
 .modal ul { margin: 0; padding-left: 18px; }
 .modal li { margin-bottom: 5px; }
-.fineprint { color: var(--label); font-size: 11.5px !important; margin-top: 14px; }
+.fineprint { color: var(--label); margin-top: 14px; }
 
 /* ---- mobile: a clean vertical stack, no overlapping controls ---- */
 @media (max-width: 640px) {
@@ -291,10 +312,9 @@ html, body {
   /* legend: above the switch, full width */
   .legend { bottom: 62px; left: 12px; right: 12px; width: auto; padding: 9px 12px; }
 
-  /* touch devices pinch-zoom: drop the +/- buttons so they don't fight the
-     bottom-centre switch; keep attribution, moved out of the switch's way */
+  /* Touch devices pinch-zoom: drop the +/- buttons so they don't fight the
+     bottom-centre switch. */
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
-  .maplibregl-ctrl-bottom-right { bottom: 60px; }
   .settings-toggle { right: 12px; bottom: 96px; }
   .settings-panel { right: 12px; bottom: 134px; }
 }
