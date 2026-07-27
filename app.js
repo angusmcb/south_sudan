@@ -77,7 +77,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-21";
+const CONTEXT_ASSET_VERSION = "20260727-22";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -322,7 +322,7 @@ function harmonizeOpenFreeMapLayer(layer) {
     layer.paint["line-opacity"] = contextFadeIn();
   } else if (sourceLayer === "water") {
     layer.paint["fill-color"] = t.river;
-    layer.paint["fill-opacity"] = 0.48;
+    layer.paint["fill-opacity"] = 1;
   }
 }
 
