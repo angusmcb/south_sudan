@@ -165,8 +165,8 @@ html, body {
 .legend-analysis { margin-top: 5px; }
 .legend-analysis-swatch {
   width: 20px; height: 10px; border-radius: 2px;
-  background: rgba(143, 146, 138, 0.1);
-  border: 1px dashed var(--admin);
+  background: rgba(143, 146, 138, 0.07);
+  border: 1px solid var(--admin);
 }
 
 /* ---- experimental display settings ---- */
