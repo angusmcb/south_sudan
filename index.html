@@ -25,14 +25,14 @@
        subpath (…github.io/ssd_rs/), so a leading slash would break. -->
   <!-- Start the small static data downloads while the MapLibre scripts load.
        MapLibre and app.js reuse these same-origin cached responses later. -->
-  <link rel="preload" as="fetch" href="style.json?v=20260727-31" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/examples.json?v=20260727-31" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/towns.geojson?v=20260727-31" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson?v=20260727-31" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/africa-mask.geojson?v=20260727-31" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/analysis_extent.geojson?v=20260727-31" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="style.json?v=20260727-32" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/examples.json?v=20260727-32" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/towns.geojson?v=20260727-32" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson?v=20260727-32" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/africa-mask.geojson?v=20260727-32" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/analysis_extent.geojson?v=20260727-32" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260727-31" />
+  <link rel="stylesheet" href="style.css?v=20260727-32" />
 </head>
 
 <body>
@@ -94,7 +94,11 @@
   <!-- Display controls. The launcher can be hidden for a presentation without
        removing the underlying satellite and theme capabilities. -->
   <button class="card settings-toggle" id="settings-toggle" type="button"
-    aria-label="Map display settings" aria-expanded="false" aria-controls="settings-panel">⚙</button>
+    aria-label="Map display settings" aria-expanded="false" aria-controls="settings-panel">
+    <svg class="settings-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.5.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.12.22.37.31.6.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.09.48 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 1 0 0-7Z"/>
+    </svg>
+  </button>
   <aside class="card settings-panel" id="settings-panel" aria-label="Map display settings" hidden>
     <div class="settings-heading">Display</div>
     <label class="settings-row">
@@ -135,7 +139,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260727-31"></script>
+  <script defer src="app.js?v=20260727-32"></script>
 </body>
 
 </html>

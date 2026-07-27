@@ -202,6 +202,10 @@ html, body {
 .settings-toggle:focus-visible {
   outline: 2px solid #0096ff; outline-offset: 0;
 }
+.settings-icon {
+  display: block; width: 16px; height: 16px;
+  fill: currentColor;
+}
 .settings-panel {
   right: 10px; bottom: 116px;
   width: 190px; padding: 12px;
