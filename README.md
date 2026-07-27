@@ -73,27 +73,38 @@ parallel. The two display layers are recreated against the selected period's
 uniquely named sources, avoiding MapLibre's same-z/x/y raster-cache collision
 while retaining both source caches.
 
-The small display-settings control can switch from the minimal committed
-background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
-World Imagery. The bundled low-zoom international boundaries, disputed
-boundaries and waterways are decoded from the same OpenFreeMap/OpenMapTiles z7
-tiles as the detailed basemap, then simplified by at most 0.002 degrees
-(well below one screen pixel at the handoff). When OpenFreeMap is selected it
-is not requested below zoom 7.15; the matching bundled lines cross-fade to
-OpenFreeMap from zoom 7.25 to 7.75. This keeps initial loading local and avoids
-a geometry or styling jump.
+The small display-settings control switches Esri World Imagery on or off and
+selects a light or dark theme. The default context is automatic: compact
+bundled international and disputed boundaries load immediately, OpenFreeMap is
+not requested below zoom 7.15, and its detailed country boundaries and
+waterways fade in from zoom 7.25 to 7.75. No bundled waterways are requested at
+low zoom. Water polygons appear from zoom 8. This keeps initial loading local
+and avoids a geometry or styling jump.
 
-OpenFreeMap waterways use the same blue-grey colour and zoom-dependent width
-as the bundled waterways. Water polygons appear from zoom 8 in the same
-blue-grey family. OpenFreeMap land-use, land-cover, other natural-feature,
-protected-area and building layers are omitted. Internal administrative
-boundaries are also omitted; international and disputed-country boundary lines
-remain.
-The two contextual basemaps are mutually exclusive and always remain beneath
-the evidence layers.
-Boundaries and rivers toggle only this viewer's bundled OpenFreeMap-derived GeoJSON;
-they do not modify OpenFreeMap. Light/dark selection recolours both the viewer
-chrome and evidence tiles and is stored locally in the browser.
+OpenFreeMap waterways and water polygons use the same opaque blue-grey colour.
+OpenFreeMap land-use, land-cover, other natural-feature, protected-area and
+building layers are omitted. Internal administrative boundaries are also
+omitted; international and disputed-country boundary lines remain. Context
+always stays beneath the evidence layers. Light/dark selection recolours the
+viewer chrome and evidence tiles and is stored locally in the browser.
+
+### Experimental pre-pruned Positron style
+
+`positron-ssd-experimental.json` is an unused experiment that copies the light
+OpenFreeMap Positron style while applying the viewer's current pruning,
+handoff, boundary and water styling ahead of time. It retains only background,
+water, waterway, transportation, aeroway and country-boundary layers. It has no
+symbols, sprites, glyphs, buildings, land use/cover, parks, other natural
+features or internal boundaries. `app.js` still downloads and filters the
+upstream style at runtime; the experiment does not change production.
+
+Rebuild it from a downloaded upstream style with:
+
+```bash
+python scripts/build_ssd_positron_style.py \
+  /path/to/openfreemap-positron.json \
+  viewer/positron-ssd-experimental.json
+```
 
 An always-on translucent mask shades everything outside the actual analysis
 region: the geoBoundaries 6.0 South Sudan ADM0 polygon used by the Earth Engine
