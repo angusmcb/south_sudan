@@ -77,6 +77,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
+const CONTEXT_ASSET_VERSION = "20260727-17";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -88,8 +89,10 @@ let basemapRequest = 0;
 // Begin fetching page data immediately, in parallel with MapLibre's style and
 // source work. The map only consumes these promises once it is ready to add
 // markers or layers, so data latency never sits on the map's load event.
-const examplesData = fetch("data/examples.json").then((response) => response.json());
-const townsData = fetch("data/towns.geojson").then((response) => response.json());
+const examplesData = fetch(`data/examples.json?v=${CONTEXT_ASSET_VERSION}`)
+  .then((response) => response.json());
+const townsData = fetch(`data/towns.geojson?v=${CONTEXT_ASSET_VERSION}`)
+  .then((response) => response.json());
 
 /* -------------------------------------------------------------------------- */
 /* Map                                                                        */
@@ -149,7 +152,7 @@ if (fromHash && fromHash.example) state.example = fromHash.example;
 
 const map = new maplibregl.Map({
   container: "map",
-  style: "style.json",
+  style: `style.json?v=${CONTEXT_ASSET_VERSION}`,
   center: fromHash ? fromHash.center : HOME.center,
   zoom: fromHash ? fromHash.zoom : HOME.zoom,
   // Zoom-out stops once Africa fills the frame (context only — where South

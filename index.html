@@ -10,15 +10,15 @@
        subpath (…github.io/ssd_rs/), so a leading slash would break. -->
   <!-- Start the small static data downloads while the MapLibre scripts load.
        MapLibre and app.js reuse these same-origin cached responses later. -->
-  <link rel="preload" as="fetch" href="style.json" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/examples.json" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/towns.geojson" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/africa-mask.geojson" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/rivers.geojson" crossorigin="anonymous" />
-  <link rel="preload" as="fetch" href="data/analysis_extent.geojson" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="style.json?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/examples.json?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/towns.geojson?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/africa-mask.geojson?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/rivers.geojson?v=20260727-17" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/analysis_extent.geojson?v=20260727-17" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260727-16" />
+  <link rel="stylesheet" href="style.css?v=20260727-17" />
 </head>
 
 <body>
@@ -131,7 +131,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260727-16"></script>
+  <script defer src="app.js?v=20260727-17"></script>
 </body>
 
 </html>
