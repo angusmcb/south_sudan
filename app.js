@@ -74,7 +74,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-24";
+const CONTEXT_ASSET_VERSION = "20260727-25";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -219,7 +219,6 @@ function applyTheme() {
   if (map.getLayer("africa-coast")) map.setPaintProperty("africa-coast", "line-color", t.coast);
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
-  if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
   if (map.getLayer("analysis-mask"))
     map.setPaintProperty("analysis-mask", "fill-color", t.analysisMask);
   if (map.getLayer("analysis-edge"))
@@ -251,7 +250,7 @@ const openFreeMapStyleCache = new Map();
 function evidenceAnchor() {
   const layer = map.getStyle().layers.find((candidate) =>
     candidate.id.startsWith("building-"));
-  return layer ? layer.id : "rivers";
+  return layer ? layer.id : "admin-land";
 }
 
 function removeOpenFreeMap() {
@@ -286,14 +285,6 @@ function bundledBoundaryOpacity() {
   if (displaySettings.basemap !== "openfreemap" || !openFreeMapLayerIds.length) return 1;
   return ["interpolate", ["linear"], ["zoom"],
     CONTEXT_HANDOFF.start, 1, CONTEXT_HANDOFF.end, 0];
-}
-
-function bundledRiverOpacity() {
-  if (displaySettings.basemap !== "openfreemap" || !openFreeMapLayerIds.length) {
-    return ["interpolate", ["linear"], ["zoom"], 5, 0, 6, 0.85];
-  }
-  return ["interpolate", ["linear"], ["zoom"],
-    5, 0, 6, 0.85, CONTEXT_HANDOFF.start, 0.85, CONTEXT_HANDOFF.end, 0];
 }
 
 function includeOpenFreeMapLayer(layer) {
@@ -405,13 +396,10 @@ function applyContextVisibility() {
   ["admin-land", "admin-disputed"].forEach((id) => {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "visible");
   });
-  if (map.getLayer("rivers")) map.setLayoutProperty("rivers", "visibility", "visible");
   ["admin-land", "admin-disputed"].forEach((id) => {
     if (map.getLayer(id))
       map.setPaintProperty(id, "line-opacity", bundledBoundaryOpacity());
   });
-  if (map.getLayer("rivers"))
-    map.setPaintProperty("rivers", "line-opacity", bundledRiverOpacity());
 }
 
 function applyBasemap() {
@@ -698,7 +686,7 @@ function loadEvidence(period) {
             "raster-fade-duration": 0,
             "raster-resampling": "nearest",
           },
-        }, "rivers");
+        }, "admin-land");
       }
     });
   });
@@ -714,7 +702,7 @@ function loadEvidence(period) {
         "raster-fade-duration": 180,
         "raster-resampling": "nearest",
       },
-    }, "rivers");
+    }, "admin-land");
   });
   evidenceState = { period, theme: activeTheme };
 }
