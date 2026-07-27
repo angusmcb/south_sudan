@@ -4,19 +4,23 @@
   "metadata": {
     "ssd:note": "Committed MapLibre base style. app.js adds the public Yei loss/gain/stable PMTiles raster at runtime and styles its raw evidence channels in the browser."
   },
+  "transition": {
+    "duration": 0,
+    "delay": 0
+  },
   "sources": {
     "admin": {
       "type": "geojson",
-      "data": "data/admin_boundaries_ssd.geojson?v=20260727-29",
+      "data": "data/admin_boundaries_ssd.geojson?v=20260727-30",
       "attribution": "Context © OpenFreeMap/OpenMapTiles · © OpenStreetMap contributors"
     },
     "africa-mask": {
       "type": "geojson",
-      "data": "data/africa-mask.geojson?v=20260727-29"
+      "data": "data/africa-mask.geojson?v=20260727-30"
     },
     "analysis-extent": {
       "type": "geojson",
-      "data": "data/analysis_extent.geojson?v=20260727-29",
+      "data": "data/analysis_extent.geojson?v=20260727-30",
       "attribution": "Analysis extent © geoBoundaries 6.0.0 (CC BY 4.0)"
     },
     "aggregates": {
