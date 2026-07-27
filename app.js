@@ -21,12 +21,12 @@ const THEME = {
   light: {
     land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#918E82", teal: "#2E7E72", underlay: "#918E82", mixed: "#918E82",
     water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60",
-    analysisMask: "#555B55", analysisEdge: "#747A72"
+    analysisMask: "#8F928A", analysisEdge: "#858A81"
   },
   dark: {
     land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#9C9A8F", teal: "#4AA894", underlay: "#9C9A8F", mixed: "#9C9A8F",
     water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294",
-    analysisMask: "#000000", analysisEdge: "#858B82"
+    analysisMask: "#070907", analysisEdge: "#6F756D"
   },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
@@ -77,7 +77,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-17";
+const CONTEXT_ASSET_VERSION = "20260727-18";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
