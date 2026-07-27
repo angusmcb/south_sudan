@@ -7,20 +7,20 @@
   "sources": {
     "admin": {
       "type": "geojson",
-      "data": "data/admin_boundaries_ssd.geojson?v=20260727-20",
+      "data": "data/admin_boundaries_ssd.geojson?v=20260727-21",
       "attribution": "Context © OpenFreeMap/OpenMapTiles · © OpenStreetMap contributors"
     },
     "africa-mask": {
       "type": "geojson",
-      "data": "data/africa-mask.geojson?v=20260727-20"
+      "data": "data/africa-mask.geojson?v=20260727-21"
     },
     "rivers": {
       "type": "geojson",
-      "data": "data/rivers.geojson?v=20260727-20"
+      "data": "data/rivers.geojson?v=20260727-21"
     },
     "analysis-extent": {
       "type": "geojson",
-      "data": "data/analysis_extent.geojson?v=20260727-20",
+      "data": "data/analysis_extent.geojson?v=20260727-21",
       "attribution": "Analysis extent © geoBoundaries 6.0.0 (CC BY 4.0)"
     },
     "aggregates": {
@@ -163,7 +163,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#C1D2D1",
+        "line-color": "#D9E0DA",
         "line-opacity": [
           "interpolate",
           [
