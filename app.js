@@ -34,7 +34,6 @@ const SETTINGS_KEY = "ssd-viewer-settings-v1";
 const displaySettings = {
   theme: null,
   basemap: "openfreemap",
-  contextStyle: "upstream",
 };
 try {
   const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
@@ -42,7 +41,6 @@ try {
   // "minimal" was the old manual mode. Both it and "openfreemap" now mean
   // automatic lightweight context with an OpenFreeMap handoff on zoom-in.
   if (saved.basemap === "satellite") displaySettings.basemap = "satellite";
-  if (saved.contextStyle === "pruned") displaySettings.contextStyle = "pruned";
 } catch (_) {
   // A blocked or malformed local setting should never prevent the map loading.
 }
@@ -76,7 +74,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-27";
+const CONTEXT_ASSET_VERSION = "20260727-28";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -237,18 +235,11 @@ function applyTheme() {
 /* -------------------------------------------------------------------------- */
 /* Optional context basemaps                                                  */
 /* -------------------------------------------------------------------------- */
-const OPENFREEMAP_STYLES = {
-  light: "https://tiles.openfreemap.org/styles/positron",
-  dark: "https://tiles.openfreemap.org/styles/dark",
+const CONTEXT_STYLES = {
+  light: `styles/ssd-context-light.json?v=${CONTEXT_ASSET_VERSION}`,
+  dark: `styles/ssd-context-dark.json?v=${CONTEXT_ASSET_VERSION}`,
 };
-const EXPERIMENTAL_POSITRON_STYLE =
-  `positron-ssd-experimental.json?v=${CONTEXT_ASSET_VERSION}`;
 const CONTEXT_HANDOFF = { load: 7.15, start: 7.25, end: 7.75 };
-const OPENFREEMAP_WATER_MIN_ZOOM = 8;
-const OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS =
-  new Set(["boundary_2", "boundary_disputed"]);
-const OPENFREEMAP_EXCLUDED_SOURCE_LAYERS =
-  new Set(["building", "landcover", "landuse", "natural", "park"]);
 const openFreeMapStyleCache = new Map();
 
 function evidenceAnchor() {
@@ -266,56 +257,12 @@ function removeOpenFreeMap() {
   openFreeMapTheme = null;
 }
 
-function openFreeMapSourceLayer(layer) {
-  return layer["source-layer"] || "";
-}
-
-function contextBoundaryWidth() {
-  return ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6];
-}
-
-function contextRiverWidth() {
-  return ["interpolate", ["linear"], ["zoom"], 6, 1.0, 9, 1.8, 12, 3.0];
-}
-
-function contextFadeIn() {
-  return ["interpolate", ["linear"], ["zoom"],
-    CONTEXT_HANDOFF.start, 0, CONTEXT_HANDOFF.end, 1];
-}
-
 function bundledBoundaryOpacity() {
   // Keep the instant GeoJSON fallback fully visible until the hosted layers
   // have actually been installed; a slow network must not create a blank gap.
   if (displaySettings.basemap !== "openfreemap" || !openFreeMapLayerIds.length) return 1;
   return ["interpolate", ["linear"], ["zoom"],
     CONTEXT_HANDOFF.start, 1, CONTEXT_HANDOFF.end, 0];
-}
-
-function includeOpenFreeMapLayer(layer) {
-  const sourceLayer = openFreeMapSourceLayer(layer);
-  if (layer.source !== "openmaptiles" || layer.type === "symbol") return false;
-  if (OPENFREEMAP_EXCLUDED_SOURCE_LAYERS.has(sourceLayer)) return false;
-  if (sourceLayer === "boundary"
-      && !OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS.has(layer.id)) return false;
-  return !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern"));
-}
-
-function harmonizeOpenFreeMapLayer(layer) {
-  const sourceLayer = openFreeMapSourceLayer(layer);
-  const t = theme();
-  layer.paint = layer.paint || {};
-  if (sourceLayer === "boundary") {
-    layer.paint["line-color"] = t.admin;
-    layer.paint["line-width"] = contextBoundaryWidth();
-    layer.paint["line-opacity"] = contextFadeIn();
-  } else if (sourceLayer === "waterway") {
-    layer.paint["line-color"] = t.river;
-    layer.paint["line-width"] = contextRiverWidth();
-    layer.paint["line-opacity"] = contextFadeIn();
-  } else if (sourceLayer === "water") {
-    layer.paint["fill-color"] = t.river;
-    layer.paint["fill-opacity"] = 1;
-  }
 }
 
 function placeAnalysisMask() {
@@ -326,24 +273,18 @@ function placeAnalysisMask() {
 }
 
 async function loadOpenFreeMap(activeTheme, request) {
-  const usePrunedStyle =
-    activeTheme === "light" && displaySettings.contextStyle === "pruned";
-  const styleKey = `${activeTheme}:${usePrunedStyle ? "pruned" : "upstream"}`;
-  const styleUrl = usePrunedStyle
-    ? EXPERIMENTAL_POSITRON_STYLE
-    : OPENFREEMAP_STYLES[activeTheme];
-  if (openFreeMapTheme === styleKey && openFreeMapLayerIds.length) return;
+  if (openFreeMapTheme === activeTheme && openFreeMapLayerIds.length) return;
   removeOpenFreeMap();
-  let pending = openFreeMapStyleCache.get(styleKey);
+  let pending = openFreeMapStyleCache.get(activeTheme);
   if (!pending) {
-    pending = fetch(styleUrl).then((response) => {
-      if (!response.ok) throw new Error(`OpenFreeMap style request failed (${response.status})`);
+    pending = fetch(CONTEXT_STYLES[activeTheme]).then((response) => {
+      if (!response.ok) throw new Error(`Context style request failed (${response.status})`);
       return response.json();
     }).catch((error) => {
-      openFreeMapStyleCache.delete(styleKey);
+      openFreeMapStyleCache.delete(activeTheme);
       throw error;
     });
-    openFreeMapStyleCache.set(styleKey, pending);
+    openFreeMapStyleCache.set(activeTheme, pending);
   }
   const style = await pending;
   if (request !== basemapRequest || displaySettings.basemap !== "openfreemap") return;
@@ -353,20 +294,15 @@ async function loadOpenFreeMap(activeTheme, request) {
   map.addSource("openfreemap", source);
   const anchor = evidenceAnchor();
   style.layers
-    .filter(includeOpenFreeMapLayer)
+    .filter((layer) => layer.source === "openmaptiles")
     .forEach((layer) => {
       const copy = structuredClone(layer);
       copy.id = `openfreemap-${layer.id}`;
       copy.source = "openfreemap";
-      copy.minzoom = Math.max(copy.minzoom || 0, CONTEXT_HANDOFF.start);
-      if (openFreeMapSourceLayer(copy) === "water") {
-        copy.minzoom = Math.max(copy.minzoom || 0, OPENFREEMAP_WATER_MIN_ZOOM);
-      }
-      harmonizeOpenFreeMapLayer(copy);
       map.addLayer(copy, anchor);
       openFreeMapLayerIds.push(copy.id);
     });
-  openFreeMapTheme = styleKey;
+  openFreeMapTheme = activeTheme;
   placeAnalysisMask();
   applyContextVisibility();
 }
@@ -396,12 +332,7 @@ function ensureSatellite() {
 
 function syncSettingsControls() {
   const satellite = document.getElementById("setting-satellite");
-  const prunedStyle = document.getElementById("setting-pruned-style");
   if (satellite) satellite.checked = displaySettings.basemap === "satellite";
-  if (prunedStyle) {
-    prunedStyle.checked = displaySettings.contextStyle === "pruned";
-    prunedStyle.disabled = themeName() !== "light";
-  }
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.themeChoice === themeName()));
   });
@@ -439,12 +370,6 @@ function applyBasemap() {
 function chooseSatellite() {
   displaySettings.basemap =
     displaySettings.basemap === "satellite" ? "openfreemap" : "satellite";
-  saveDisplaySettings();
-  applyBasemap();
-}
-
-function chooseContextStyle(usePrunedStyle) {
-  displaySettings.contextStyle = usePrunedStyle ? "pruned" : "upstream";
   saveDisplaySettings();
   applyBasemap();
 }
@@ -1012,8 +937,6 @@ function wireChrome() {
   });
   document.getElementById("setting-satellite")
     .addEventListener("change", chooseSatellite);
-  document.getElementById("setting-pruned-style")
-    .addEventListener("change", (event) => chooseContextStyle(event.target.checked));
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.addEventListener("click", () => chooseTheme(button.dataset.themeChoice));
   });

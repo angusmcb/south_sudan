@@ -169,7 +169,7 @@ html, body {
   border: 1px solid var(--admin);
 }
 
-/* ---- experimental display settings ---- */
+/* ---- display settings ---- */
 .settings-toggle {
   right: 10px; bottom: 104px;
   width: 30px; height: 30px; padding: 0;
@@ -205,7 +205,6 @@ html, body {
 .settings-row input:checked { background: var(--teal); }
 .settings-row input:checked::after { transform: translateX(12px); }
 .settings-row input:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-.settings-row input:disabled { cursor: not-allowed; opacity: 0.45; }
 .settings-theme-label {
   margin: 8px 0 5px; color: var(--label); font-size: 10.5px;
 }

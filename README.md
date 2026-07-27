@@ -74,12 +74,13 @@ uniquely named sources, avoiding MapLibre's same-z/x/y raster-cache collision
 while retaining both source caches.
 
 The small display-settings control switches Esri World Imagery on or off and
-selects a light or dark theme. The default context is automatic: compact
-bundled international and disputed boundaries load immediately, OpenFreeMap is
-not requested below zoom 7.15, and its detailed country boundaries and
-waterways fade in from zoom 7.25 to 7.75. No bundled waterways are requested at
-low zoom. Water polygons appear from zoom 8. This keeps initial loading local
-and avoids a geometry or styling jump.
+selects a light or dark theme. Context is automatic: compact bundled
+international and disputed boundaries load immediately, and the relevant
+local light or dark OpenFreeMap context style is not requested below zoom
+7.15. Its detailed country boundaries and waterways fade in from zoom 7.25 to
+7.75. No bundled waterways are requested at low zoom. Water polygons appear
+from zoom 8. This keeps initial loading local and avoids a geometry or styling
+jump.
 
 OpenFreeMap waterways and water polygons use the same opaque blue-grey colour.
 OpenFreeMap land-use, land-cover, other natural-feature, protected-area and
@@ -88,26 +89,26 @@ omitted; international and disputed-country boundary lines remain. Context
 always stays beneath the evidence layers. Light/dark selection recolours the
 viewer chrome and evidence tiles and is stored locally in the browser.
 
-### Experimental pre-pruned Positron style
+### Local OpenFreeMap context styles
 
-`positron-ssd-experimental.json` copies the light OpenFreeMap Positron style
-while applying the viewer's current pruning, handoff, boundary and water
-styling ahead of time. It retains only background, water, waterway,
-transportation, aeroway and country-boundary layers. It has no symbols,
-sprites, glyphs, buildings, land use/cover, parks, other natural features or
-internal boundaries.
+`styles/ssd-context-light.json` and `styles/ssd-context-dark.json` are compact
+copies of OpenFreeMap's Positron and dark styles with the viewer's pruning,
+handoff, boundary and water styling applied ahead of time. They retain only
+background, water, waterway, transportation, aeroway and country-boundary
+layers. Railway, tunnel, symbol, building, land-use/cover, park, other natural
+feature and internal-boundary layers are omitted. The viewer loads the
+appropriate local style directly; it does not fetch or rewrite an upstream
+style at runtime.
 
-The upstream style remains the default. In light mode, open the display
-settings and enable **Pruned map style (test)** to switch to the local style at
-the current place and zoom. Disable it to compare against upstream Positron.
-Dark mode continues to use the upstream dark style.
-
-Rebuild it from a downloaded upstream style with:
+Rebuild them from downloaded upstream styles with:
 
 ```bash
-python scripts/build_ssd_positron_style.py \
+python scripts/build_ssd_context_style.py --theme light \
   /path/to/openfreemap-positron.json \
-  viewer/positron-ssd-experimental.json
+  viewer/styles/ssd-context-light.json
+python scripts/build_ssd_context_style.py --theme dark \
+  /path/to/openfreemap-dark.json \
+  viewer/styles/ssd-context-dark.json
 ```
 
 An always-on translucent mask shades everything outside the actual analysis
