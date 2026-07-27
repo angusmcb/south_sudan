@@ -76,8 +76,9 @@ while retaining both source caches.
 The small display-settings control can switch from the minimal committed
 background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
 World Imagery. OpenFreeMap water polygons and linework appear from zoom 8,
-while its internal administrative boundaries, protected-area fill and building
-fill are omitted. International and disputed-country boundary lines remain.
+while its land-use, land-cover, other natural-feature, protected-area and
+building layers are omitted. Internal administrative boundaries are also
+omitted; international and disputed-country boundary lines remain.
 The two contextual basemaps are mutually exclusive and always remain beneath
 the evidence layers.
 Boundaries and rivers toggle only this viewer's bundled Natural Earth GeoJSON;

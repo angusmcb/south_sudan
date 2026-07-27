@@ -231,6 +231,8 @@ const OPENFREEMAP_STYLES = {
 const OPENFREEMAP_WATER_MIN_ZOOM = 8;
 const OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS =
   new Set(["boundary_2", "boundary_disputed"]);
+const OPENFREEMAP_EXCLUDED_SOURCE_LAYERS =
+  new Set(["building", "landcover", "landuse", "natural", "park"]);
 const openFreeMapStyleCache = new Map();
 
 function evidenceAnchor() {
@@ -255,7 +257,7 @@ function openFreeMapSourceLayer(layer) {
 function includeOpenFreeMapLayer(layer) {
   const sourceLayer = openFreeMapSourceLayer(layer);
   if (layer.source !== "openmaptiles" || layer.type === "symbol") return false;
-  if (layer.id === "park" || layer.id === "building") return false;
+  if (OPENFREEMAP_EXCLUDED_SOURCE_LAYERS.has(sourceLayer)) return false;
   if (sourceLayer === "boundary"
       && !OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS.has(layer.id)) return false;
   return !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern"));
