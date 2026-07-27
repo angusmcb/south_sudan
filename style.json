@@ -11,16 +11,16 @@
   "sources": {
     "admin": {
       "type": "geojson",
-      "data": "data/admin_boundaries_ssd.geojson?v=20260727-32",
+      "data": "data/admin_boundaries_ssd.geojson?v=20260727-33",
       "attribution": "Context © OpenFreeMap/OpenMapTiles · © OpenStreetMap contributors"
     },
     "africa-mask": {
       "type": "geojson",
-      "data": "data/africa-mask.geojson?v=20260727-32"
+      "data": "data/africa-mask.geojson?v=20260727-33"
     },
     "analysis-extent": {
       "type": "geojson",
-      "data": "data/analysis_extent.geojson?v=20260727-32",
+      "data": "data/analysis_extent.geojson?v=20260727-33",
       "attribution": "Analysis extent © geoBoundaries 6.0.0 (CC BY 4.0)"
     },
     "aggregates": {

@@ -74,7 +74,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-32";
+const CONTEXT_ASSET_VERSION = "20260727-33";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -171,6 +171,9 @@ map.on("load", () => {
   mapReady = true;
   if (!fromHash) map.fitBounds(HOME_BOUNDS, { padding: 32, duration: 0 });
   map.once("render", () => {
+    clearTimeout(window.ssdMapLoadTimer);
+    const loadingIndicator = document.getElementById("map-loading");
+    if (loadingIndicator) loadingIndicator.hidden = true;
     document.documentElement.classList.add("map-theme-ready");
   });
   applyTheme();                 // sets background/lines/underlay + ramp (calls applyPeriod)

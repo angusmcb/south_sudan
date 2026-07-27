@@ -53,6 +53,21 @@ html, body {
 }
 :root.map-theme-ready #map { visibility: visible; }
 .maplibregl-canvas { outline: none; }
+.map-loading {
+  position: absolute; z-index: 4; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 11px; border: 1px solid var(--card-line);
+  border-radius: 7px; background: var(--card-bg); color: var(--label);
+  box-shadow: var(--shadow);
+  font-size: 12px; font-weight: 550;
+}
+.map-loading-spinner {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid var(--admin); border-top-color: var(--teal);
+  animation: map-loading-spin 700ms linear infinite;
+}
+@keyframes map-loading-spin { to { transform: rotate(360deg); } }
 
 /* ---- floating cards ---- */
 .card {
@@ -326,4 +341,5 @@ html, body {
 /* ---- reduced motion: MapLibre easing is handled in app.js (jumpTo) ---- */
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
+  .map-loading-spinner { animation: none; }
 }
