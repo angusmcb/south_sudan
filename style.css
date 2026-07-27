@@ -47,7 +47,11 @@ html, body {
   background: var(--paper);
 }
 
-#map { position: absolute; inset: 0; background: var(--paper); }
+#map {
+  position: absolute; inset: 0; background: var(--paper);
+  visibility: hidden;
+}
+:root.map-theme-ready #map { visibility: visible; }
 .maplibregl-canvas { outline: none; }
 
 /* ---- floating cards ---- */
