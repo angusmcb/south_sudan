@@ -33,17 +33,14 @@ const themeQuery = matchMedia("(prefers-color-scheme: dark)");
 const SETTINGS_KEY = "ssd-viewer-settings-v1";
 const displaySettings = {
   theme: null,
-  basemap: "minimal",
-  boundaries: true,
-  rivers: true,
+  basemap: "openfreemap",
 };
 try {
   const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
   if (saved.theme === "light" || saved.theme === "dark") displaySettings.theme = saved.theme;
-  if (["minimal", "openfreemap", "satellite"].includes(saved.basemap))
-    displaySettings.basemap = saved.basemap;
-  if (typeof saved.boundaries === "boolean") displaySettings.boundaries = saved.boundaries;
-  if (typeof saved.rivers === "boolean") displaySettings.rivers = saved.rivers;
+  // "minimal" was the old manual mode. Both it and "openfreemap" now mean
+  // automatic lightweight context with an OpenFreeMap handoff on zoom-in.
+  if (saved.basemap === "satellite") displaySettings.basemap = "satellite";
 } catch (_) {
   // A blocked or malformed local setting should never prevent the map loading.
 }
@@ -77,7 +74,7 @@ const DEFAULT_PERIOD = "war";
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const HOME = { center: [29.7, 7.9], zoom: 5.2 };
 const HOME_BOUNDS = [[22.9863167, 3.0423830], [36.3971901, 12.6861457]];
-const CONTEXT_ASSET_VERSION = "20260727-22";
+const CONTEXT_ASSET_VERSION = "20260727-23";
 
 const state = { period: DEFAULT_PERIOD, example: null };
 let evidenceState = null;
@@ -397,14 +394,8 @@ function ensureSatellite() {
 }
 
 function syncSettingsControls() {
-  const openFreeMap = document.getElementById("setting-openfreemap");
   const satellite = document.getElementById("setting-satellite");
-  const boundaries = document.getElementById("setting-boundaries");
-  const rivers = document.getElementById("setting-rivers");
-  if (openFreeMap) openFreeMap.checked = displaySettings.basemap === "openfreemap";
   if (satellite) satellite.checked = displaySettings.basemap === "satellite";
-  if (boundaries) boundaries.checked = displaySettings.boundaries;
-  if (rivers) rivers.checked = displaySettings.rivers;
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.setAttribute("aria-checked", String(button.dataset.themeChoice === themeName()));
   });
@@ -412,11 +403,9 @@ function syncSettingsControls() {
 
 function applyContextVisibility() {
   ["admin-land", "admin-disputed"].forEach((id) => {
-    if (map.getLayer(id)) map.setLayoutProperty(
-      id, "visibility", displaySettings.boundaries ? "visible" : "none");
+    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "visible");
   });
-  if (map.getLayer("rivers")) map.setLayoutProperty(
-    "rivers", "visibility", displaySettings.rivers ? "visible" : "none");
+  if (map.getLayer("rivers")) map.setLayoutProperty("rivers", "visibility", "visible");
   ["admin-land", "admin-disputed"].forEach((id) => {
     if (map.getLayer(id))
       map.setPaintProperty(id, "line-opacity", bundledBoundaryOpacity());
@@ -444,9 +433,9 @@ function applyBasemap() {
   syncSettingsControls();
 }
 
-function chooseBasemap(mode) {
+function chooseSatellite() {
   displaySettings.basemap =
-    displaySettings.basemap === mode ? "minimal" : mode;
+    displaySettings.basemap === "satellite" ? "openfreemap" : "satellite";
   saveDisplaySettings();
   applyBasemap();
 }
@@ -457,14 +446,6 @@ function chooseTheme(nextTheme) {
   displaySettings.theme = nextTheme;
   saveDisplaySettings();
   applyTheme();
-  syncSettingsControls();
-}
-
-function chooseContextLayer(key) {
-  if (key !== "boundaries" && key !== "rivers") return;
-  displaySettings[key] = !displaySettings[key];
-  saveDisplaySettings();
-  applyContextVisibility();
   syncSettingsControls();
 }
 
@@ -1020,14 +1001,8 @@ function wireChrome() {
     settingsPanel.hidden = !settingsPanel.hidden;
     settingsToggle.setAttribute("aria-expanded", String(!settingsPanel.hidden));
   });
-  document.getElementById("setting-openfreemap")
-    .addEventListener("change", () => chooseBasemap("openfreemap"));
   document.getElementById("setting-satellite")
-    .addEventListener("change", () => chooseBasemap("satellite"));
-  document.getElementById("setting-boundaries")
-    .addEventListener("change", () => chooseContextLayer("boundaries"));
-  document.getElementById("setting-rivers")
-    .addEventListener("change", () => chooseContextLayer("rivers"));
+    .addEventListener("change", chooseSatellite);
   document.querySelectorAll("[data-theme-choice]").forEach((button) => {
     button.addEventListener("click", () => chooseTheme(button.dataset.themeChoice));
   });
