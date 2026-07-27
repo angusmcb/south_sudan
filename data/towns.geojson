@@ -659,6 +659,17 @@
           3.2452
         ]
       }
-    }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Itang",
+        "minzoom": 7
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.2661,
+          8.1973
   ]
 }
