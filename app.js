@@ -20,11 +20,13 @@
 const THEME = {
   light: {
     land: "#EFEDE3", admin: "#B7BAAC", rust: "#BC4F25", neutral: "#918E82", teal: "#2E7E72", underlay: "#918E82", mixed: "#918E82",
-    water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60"
+    water: "#D9DCD6", coast: "#C4C7BC", river: "#8FB4BE", box: "#646A60",
+    analysisMask: "#555B55", analysisEdge: "#747A72"
   },
   dark: {
     land: "#141714", admin: "#3A3F38", rust: "#E06B3B", neutral: "#9C9A8F", teal: "#4AA894", underlay: "#9C9A8F", mixed: "#9C9A8F",
-    water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294"
+    water: "#0E1512", coast: "#2C332E", river: "#3E5A61", box: "#9BA294",
+    analysisMask: "#000000", analysisEdge: "#858B82"
   },
 };
 const themeQuery = matchMedia("(prefers-color-scheme: dark)");
@@ -168,7 +170,9 @@ map.addControl(new maplibregl.AttributionControl({
   compact: true,
   customAttribution: [
     "Building change © Google Open Buildings Temporal (CC BY 4.0)",
-    "Boundaries & rivers © Natural Earth",
+    "Context © OpenFreeMap · © OpenStreetMap contributors",
+    "Africa silhouette © Natural Earth (public domain)",
+    "Analysis extent © geoBoundaries (CC BY 4.0)",
   ],
 }), "bottom-right");
 
@@ -197,6 +201,9 @@ map.on("load", () => {
 });
 
 map.on("moveend", writeHash);
+map.on("zoomend", () => {
+  if (displaySettings.basemap === "openfreemap") applyBasemap();
+});
 map.on("error", (e) => console.warn("map error:", e && e.error ? e.error.message : e));
 
 // Follow the OS light/dark preference at runtime (matches the CSS chrome).
@@ -213,8 +220,13 @@ function applyTheme() {
   if (map.getLayer("admin-land")) map.setPaintProperty("admin-land", "line-color", t.admin);
   if (map.getLayer("admin-disputed")) map.setPaintProperty("admin-disputed", "line-color", t.admin);
   if (map.getLayer("rivers")) map.setPaintProperty("rivers", "line-color", t.river);
+  if (map.getLayer("analysis-mask"))
+    map.setPaintProperty("analysis-mask", "fill-color", t.analysisMask);
+  if (map.getLayer("analysis-edge"))
+    map.setPaintProperty("analysis-edge", "line-color", t.analysisEdge);
   if (map.getLayer("place-box-glow")) map.setPaintProperty("place-box-glow", "line-color", t.box);
   if (map.getLayer("place-box-line")) map.setPaintProperty("place-box-line", "line-color", t.box);
+  applyContextVisibility();
   applyPeriod(state.period, { silent: true });   // ramp endpoints are theme-dependent
   loadEvidence(state.period);                     // recolour cached raw evidence for the new theme
   if (displaySettings.basemap === "openfreemap") applyBasemap();
@@ -228,6 +240,7 @@ const OPENFREEMAP_STYLES = {
   light: "https://tiles.openfreemap.org/styles/positron",
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
+const CONTEXT_HANDOFF = { load: 7.15, start: 7.25, end: 7.75 };
 const OPENFREEMAP_WATER_MIN_ZOOM = 8;
 const OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS =
   new Set(["boundary_2", "boundary_disputed"]);
@@ -254,6 +267,35 @@ function openFreeMapSourceLayer(layer) {
   return layer["source-layer"] || "";
 }
 
+function contextBoundaryWidth() {
+  return ["interpolate", ["linear"], ["zoom"], 4, 0.6, 8, 1.0, 12, 1.6];
+}
+
+function contextRiverWidth() {
+  return ["interpolate", ["linear"], ["zoom"], 6, 1.0, 9, 1.8, 12, 3.0];
+}
+
+function contextFadeIn() {
+  return ["interpolate", ["linear"], ["zoom"],
+    CONTEXT_HANDOFF.start, 0, CONTEXT_HANDOFF.end, 1];
+}
+
+function bundledBoundaryOpacity() {
+  // Keep the instant GeoJSON fallback fully visible until the hosted layers
+  // have actually been installed; a slow network must not create a blank gap.
+  if (displaySettings.basemap !== "openfreemap" || !openFreeMapLayerIds.length) return 1;
+  return ["interpolate", ["linear"], ["zoom"],
+    CONTEXT_HANDOFF.start, 1, CONTEXT_HANDOFF.end, 0];
+}
+
+function bundledRiverOpacity() {
+  if (displaySettings.basemap !== "openfreemap" || !openFreeMapLayerIds.length) {
+    return ["interpolate", ["linear"], ["zoom"], 5, 0, 6, 0.85];
+  }
+  return ["interpolate", ["linear"], ["zoom"],
+    5, 0, 6, 0.85, CONTEXT_HANDOFF.start, 0.85, CONTEXT_HANDOFF.end, 0];
+}
+
 function includeOpenFreeMapLayer(layer) {
   const sourceLayer = openFreeMapSourceLayer(layer);
   if (layer.source !== "openmaptiles" || layer.type === "symbol") return false;
@@ -261,6 +303,31 @@ function includeOpenFreeMapLayer(layer) {
   if (sourceLayer === "boundary"
       && !OPENFREEMAP_COUNTRY_BOUNDARY_LAYERS.has(layer.id)) return false;
   return !Object.keys(layer.paint || {}).some((key) => key.endsWith("-pattern"));
+}
+
+function harmonizeOpenFreeMapLayer(layer) {
+  const sourceLayer = openFreeMapSourceLayer(layer);
+  const t = theme();
+  layer.paint = layer.paint || {};
+  if (sourceLayer === "boundary") {
+    layer.paint["line-color"] = t.admin;
+    layer.paint["line-width"] = contextBoundaryWidth();
+    layer.paint["line-opacity"] = contextFadeIn();
+  } else if (sourceLayer === "waterway") {
+    layer.paint["line-color"] = t.river;
+    layer.paint["line-width"] = contextRiverWidth();
+    layer.paint["line-opacity"] = contextFadeIn();
+  } else if (sourceLayer === "water") {
+    layer.paint["fill-color"] = t.river;
+    layer.paint["fill-opacity"] = 0.48;
+  }
+}
+
+function placeAnalysisMask() {
+  const anchor = evidenceAnchor();
+  ["analysis-mask", "analysis-edge"].forEach((id) => {
+    if (map.getLayer(id)) map.moveLayer(id, anchor);
+  });
 }
 
 async function loadOpenFreeMap(activeTheme, request) {
@@ -290,13 +357,16 @@ async function loadOpenFreeMap(activeTheme, request) {
       const copy = structuredClone(layer);
       copy.id = `openfreemap-${layer.id}`;
       copy.source = "openfreemap";
-      if (["water", "waterway"].includes(openFreeMapSourceLayer(copy))) {
+      copy.minzoom = Math.max(copy.minzoom || 0, CONTEXT_HANDOFF.start);
+      if (openFreeMapSourceLayer(copy) === "water") {
         copy.minzoom = Math.max(copy.minzoom || 0, OPENFREEMAP_WATER_MIN_ZOOM);
       }
+      harmonizeOpenFreeMapLayer(copy);
       map.addLayer(copy, anchor);
       openFreeMapLayerIds.push(copy.id);
     });
   openFreeMapTheme = activeTheme;
+  placeAnalysisMask();
   applyContextVisibility();
 }
 
@@ -344,6 +414,12 @@ function applyContextVisibility() {
   });
   if (map.getLayer("rivers")) map.setLayoutProperty(
     "rivers", "visibility", displaySettings.rivers ? "visible" : "none");
+  ["admin-land", "admin-disputed"].forEach((id) => {
+    if (map.getLayer(id))
+      map.setPaintProperty(id, "line-opacity", bundledBoundaryOpacity());
+  });
+  if (map.getLayer("rivers"))
+    map.setPaintProperty("rivers", "line-opacity", bundledRiverOpacity());
 }
 
 function applyBasemap() {
@@ -353,12 +429,14 @@ function applyBasemap() {
   map.setLayoutProperty(
     "satellite", "visibility",
     displaySettings.basemap === "satellite" ? "visible" : "none");
-  if (displaySettings.basemap === "openfreemap") {
+  if (displaySettings.basemap === "openfreemap"
+      && map.getZoom() >= CONTEXT_HANDOFF.load) {
     loadOpenFreeMap(themeName(), request)
       .catch((error) => console.warn("could not load OpenFreeMap background", error));
   } else {
     removeOpenFreeMap();
   }
+  placeAnalysisMask();
   applyContextVisibility();
   syncSettingsControls();
 }

@@ -152,7 +152,8 @@ html, body {
   display: flex; justify-content: space-between;
   font-size: 10.5px; color: var(--label); margin-top: 4px;
 }
-.legend-unchanged {
+.legend-unchanged,
+.legend-analysis {
   display: flex; align-items: center; gap: 7px;
   color: var(--label); font-size: 10.5px; margin-top: 8px;
 }
@@ -160,6 +161,12 @@ html, body {
   width: 20px; height: 10px; border-radius: 2px;
   background: var(--neutral); opacity: 0.72;
   border: 1px solid var(--card-line);
+}
+.legend-analysis { margin-top: 5px; }
+.legend-analysis-swatch {
+  width: 20px; height: 10px; border-radius: 2px;
+  background: rgba(85, 91, 85, 0.22);
+  border: 1px dashed var(--label);
 }
 
 /* ---- experimental display settings ---- */

@@ -16,8 +16,9 @@
   <link rel="preload" as="fetch" href="data/admin_boundaries_ssd.geojson" crossorigin="anonymous" />
   <link rel="preload" as="fetch" href="data/africa-mask.geojson" crossorigin="anonymous" />
   <link rel="preload" as="fetch" href="data/rivers.geojson" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="data/analysis_extent.geojson" crossorigin="anonymous" />
   <link rel="stylesheet" href="vendor/maplibre-gl.css" />
-  <link rel="stylesheet" href="style.css?v=20260724-14" />
+  <link rel="stylesheet" href="style.css?v=20260727-16" />
 </head>
 
 <body>
@@ -68,6 +69,10 @@
       <span class="legend-unchanged-swatch" aria-hidden="true"></span>
       <span>Unchanged settlement</span>
     </div>
+    <div class="legend-analysis">
+      <span class="legend-analysis-swatch" aria-hidden="true"></span>
+      <span>Outside analysis extent</span>
+    </div>
   </aside>
 
   <!-- Experimental display controls. The launcher can be hidden for a
@@ -111,8 +116,11 @@
       <ul>
         <li><strong>Building change</strong>: Google Open Buildings Temporal v1
           (CC&nbsp;BY&nbsp;4.0). Future epochs will use this project's own model outputs.</li>
-        <li><strong>Boundaries</strong>: Natural Earth, public domain. Shown for
-          orientation only; not an authority on alignments.</li>
+        <li><strong>Context</strong>: OpenFreeMap/OpenMapTiles and OpenStreetMap
+          contributors (ODbL). Shown for orientation only.</li>
+        <li><strong>Africa silhouette</strong>: Natural Earth, public domain.</li>
+        <li><strong>Analysis extent</strong>: geoBoundaries 6.0.0 (CC BY 4.0),
+          buffered by 50 km to match the Earth Engine export.</li>
         <li>Built with MapLibre GL JS and PMTiles (both BSD-3-Clause), self-hosted.</li>
       </ul>
       <p class="fineprint">Example locations are illustrative and must be verified
@@ -123,7 +131,7 @@
 
   <script defer src="vendor/pmtiles.js"></script>
   <script defer src="vendor/maplibre-gl.js"></script>
-  <script defer src="app.js?v=20260727-15"></script>
+  <script defer src="app.js?v=20260727-16"></script>
 </body>
 
 </html>

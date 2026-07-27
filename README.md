@@ -75,15 +75,31 @@ while retaining both source caches.
 
 The small display-settings control can switch from the minimal committed
 background to OpenFreeMap (Positron in light mode, Dark in dark mode) or Esri
-World Imagery. OpenFreeMap water polygons and linework appear from zoom 8,
-while its land-use, land-cover, other natural-feature, protected-area and
-building layers are omitted. Internal administrative boundaries are also
-omitted; international and disputed-country boundary lines remain.
+World Imagery. The bundled low-zoom international boundaries, disputed
+boundaries and waterways are decoded from the same OpenFreeMap/OpenMapTiles z7
+tiles as the detailed basemap, then simplified by at most 0.002 degrees
+(well below one screen pixel at the handoff). When OpenFreeMap is selected it
+is not requested below zoom 7.15; the matching bundled lines cross-fade to
+OpenFreeMap from zoom 7.25 to 7.75. This keeps initial loading local and avoids
+a geometry or styling jump.
+
+OpenFreeMap waterways use the same blue-grey colour and zoom-dependent width
+as the bundled waterways. Water polygons appear from zoom 8 in the same
+blue-grey family. OpenFreeMap land-use, land-cover, other natural-feature,
+protected-area and building layers are omitted. Internal administrative
+boundaries are also omitted; international and disputed-country boundary lines
+remain.
 The two contextual basemaps are mutually exclusive and always remain beneath
 the evidence layers.
-Boundaries and rivers toggle only this viewer's bundled Natural Earth GeoJSON;
+Boundaries and rivers toggle only this viewer's bundled OpenFreeMap-derived GeoJSON;
 they do not modify OpenFreeMap. Light/dark selection recolours both the viewer
 chrome and evidence tiles and is stored locally in the browser.
+
+An always-on translucent mask shades everything outside the actual analysis
+region: the geoBoundaries 6.0 South Sudan ADM0 polygon used by the Earth Engine
+export, simplified by 1 km and buffered by 50 km. The clear interior therefore
+means “analysed”; the shaded exterior means “not analysed”, not “no change”.
+The legend includes this distinction.
 
 The map has no persistent title card: the legend carries the product identity.
 Selecting a labelled area opens a top-left information card with the period,
