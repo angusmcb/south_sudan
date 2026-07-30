@@ -61,8 +61,31 @@ function applyDocumentTheme() {
 applyDocumentTheme();
 
 // ---- data source: immutable public release, raw evidence styled below ----
-const TILE_RELEASE_URL =
-  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/2026-07-ssd-obt-buffer50-z14-v2/tiles";
+const PUBLIC_RELEASE_ORIGIN =
+  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/";
+/* Count-density release (docs/viewer_design.md §5): change is detected on a
+ * moving 573 m support and drawn on the 9.55 m analytic grid, with loss and gain
+ * tested independently so a place that does both shows both. The archive
+ * declares its schema, so `styleEvidenceTiles` picks the right decoder and the
+ * previous presence release would still render if this URL were rolled back. */
+const DEFAULT_TILE_RELEASE_URL =
+  `${PUBLIC_RELEASE_ORIGIN}2026-07-count-v2/tiles`;
+
+/* `?tiles=` points the viewer at a candidate release before it is promoted,
+ * which is how a new archive scheme gets verified against the real UI (§3.1,
+ * §5). Restricted to a relative path or the public release prefix so a shared
+ * link can never make someone's browser fetch tiles from an arbitrary host. */
+function tileReleaseUrl() {
+  const requested = new URLSearchParams(location.search).get("tiles");
+  if (!requested) return DEFAULT_TILE_RELEASE_URL;
+  const relative = !/^[a-z]+:/i.test(requested) && !requested.startsWith("//");
+  if (relative || requested.startsWith(PUBLIC_RELEASE_ORIGIN)) {
+    return requested.replace(/\/$/, "");
+  }
+  console.warn("ignoring ?tiles= outside the public release prefix", requested);
+  return DEFAULT_TILE_RELEASE_URL;
+}
+const TILE_RELEASE_URL = tileReleaseUrl();
 
 // ---- periods: each immutable archive shares the same RGB evidence contract ----
 const PERIODS = {
@@ -100,15 +123,30 @@ if (window.pmtiles && window.maplibregl) {
   ]));
   const styledCache = new Map();
 
+  /* Which representation a release stores. The archive says so itself, so a
+   * pinned older release keeps rendering while a new one switches scheme with
+   * no code change here (docs/viewer_design.md §5). */
+  const archiveSchemas = new Map();
+  function archiveSchema(period) {
+    if (!archiveSchemas.has(period)) {
+      archiveSchemas.set(period, archives.get(period).getMetadata()
+        .then((metadata) => (metadata && metadata.schema) || SUMMED_EVIDENCE_SCHEMA)
+        .catch(() => SUMMED_EVIDENCE_SCHEMA));
+    }
+    return archiveSchemas.get(period);
+  }
+
   async function getStyledPair(period, z, x, y) {
     const activeTheme = themeName();
     const cacheKey = `${period}/${z}/${x}/${y}/${activeTheme}`;
     if (!styledCache.has(cacheKey)) {
       const pending = (async () => {
-        const response = await archives.get(period).getZxy(
-          Number(z), Number(x), Number(y));
+        const [schema, response] = await Promise.all([
+          archiveSchema(period),
+          archives.get(period).getZxy(Number(z), Number(x), Number(y)),
+        ]);
         if (!response) return null;
-        const tiles = await styleEvidenceTiles(response.data, Number(z));
+        const tiles = await styleEvidenceTiles(response.data, Number(z), schema);
         return {
           ...tiles,
           cacheControl: response.cacheControl,
@@ -378,6 +416,61 @@ function hexRgb(hex) {
   return [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
 }
 
+/* -------------------------------------------------------------------------- */
+/* Attributed count-density archives (docs/viewer_design.md §5)               */
+/* -------------------------------------------------------------------------- */
+/* These archives store finished display fractions rather than raw evidence:
+ * R and G are the share of the pixel carrying a significant loss or gain, B the
+ * share holding unchanged buildings. Every channel is a fraction of the pixel,
+ * so nothing below depends on zoom — no inverse transfer function, no
+ * neighbourhood consensus, no per-level floor tables. The significance decision
+ * was made at build time on a support fixed in ground metres, because it is a
+ * statistical judgement and not a styling choice. */
+const ATTRIBUTED_DENSITY_SCHEMA = "ssd-viewer-attributed-density-v1";
+const SUMMED_EVIDENCE_SCHEMA = "ssd-viewer-webp-evidence-v1";
+
+/* A pixel carrying any change keeps at least this opacity, so a razed village
+ * smaller than one national-zoom pixel stays legible. */
+const ATTRIBUTED_CHANGE_FLOOR = 0.35;
+const ATTRIBUTED_STABLE_FLOOR = 0.18;
+const ATTRIBUTED_STABLE_CEILING = 0.55;
+
+function styleAttributedChange(raw, output, colours) {
+  for (let offset = 0; offset < raw.data.length; offset += 4) {
+    const loss = raw.data[offset], gain = raw.data[offset + 1];
+    if (!loss && !gain) {
+      output.data[offset + 3] = 0;
+      continue;
+    }
+    const colour = loss >= gain ? colours.rust : colours.teal;
+    const share = Math.max(loss, gain) / 255;
+    output.data[offset] = colour[0];
+    output.data[offset + 1] = colour[1];
+    output.data[offset + 2] = colour[2];
+    output.data[offset + 3] = Math.round(
+      255 * (ATTRIBUTED_CHANGE_FLOOR + (1 - ATTRIBUTED_CHANGE_FLOOR) * share));
+  }
+}
+
+function styleAttributedUnchanged(raw, output, colour) {
+  const span = ATTRIBUTED_STABLE_CEILING - ATTRIBUTED_STABLE_FLOOR;
+  for (let offset = 0; offset < raw.data.length; offset += 4) {
+    const stable = raw.data[offset + 2];
+    if (!stable) {
+      output.data[offset + 3] = 0;
+      continue;
+    }
+    output.data[offset] = colour[0];
+    output.data[offset + 1] = colour[1];
+    output.data[offset + 2] = colour[2];
+    output.data[offset + 3] = Math.round(
+      255 * (ATTRIBUTED_STABLE_FLOOR + span * stable / 255));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Summed presence evidence (the released scheme)                            */
+/* -------------------------------------------------------------------------- */
 function changeAlphaFloor(zoom) {
   if (zoom <= 5) return 60;
   return ({
@@ -538,7 +631,7 @@ function styleConsensusChange(raw, output, zoom, colours) {
   }
 }
 
-async function styleEvidenceTiles(rawBytes, zoom) {
+async function styleEvidenceTiles(rawBytes, zoom, schema) {
   const bitmap = await createImageBitmap(new Blob([rawBytes], { type: "image/webp" }));
   const rawCanvas = document.createElement("canvas");
   rawCanvas.width = bitmap.width;
@@ -560,11 +653,16 @@ async function styleEvidenceTiles(rawBytes, zoom) {
   const changeContext = changeCanvas.getContext("2d");
   const unchanged = unchangedContext.createImageData(raw.width, raw.height);
   const change = changeContext.createImageData(raw.width, raw.height);
-  styleUnchangedImage(raw, unchanged, zoom, stableColour);
-  if (zoom >= 9) {
-    styleConsensusChange(raw, change, zoom, { rust, teal });
+  if (schema === ATTRIBUTED_DENSITY_SCHEMA) {
+    styleAttributedUnchanged(raw, unchanged, stableColour);
+    styleAttributedChange(raw, change, { rust, teal });
   } else {
-    styleOverviewChange(raw, change, zoom, { rust, teal });
+    styleUnchangedImage(raw, unchanged, zoom, stableColour);
+    if (zoom >= 9) {
+      styleConsensusChange(raw, change, zoom, { rust, teal });
+    } else {
+      styleOverviewChange(raw, change, zoom, { rust, teal });
+    }
   }
   unchangedContext.putImageData(unchanged, 0, 0);
   changeContext.putImageData(change, 0, 0);

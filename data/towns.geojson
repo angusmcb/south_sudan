@@ -1,12 +1,13 @@
 {
   "type": "FeatureCollection",
   "_comment": "Orientation place labels, rendered as DOM markers by app.js (no glyph PBFs). 'minzoom' tiers them: main towns (0) show always; regional towns (7) fade in when zoomed in; example-area towns (9) and villages (10) appear only at close range. The Bidi Bidi and Imvepi refugee-settlement labels provide context for the cross-border Central Equatoria example. Added-town coordinates are cross-checked against the GeoNames South Sudan gazetteer where available; intended for orientation, not operational use.",
+  "name": "towns",
   "features": [
     {
       "type": "Feature",
       "properties": {
         "name": "Juba",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -20,7 +21,7 @@
       "type": "Feature",
       "properties": {
         "name": "Wau",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -34,7 +35,7 @@
       "type": "Feature",
       "properties": {
         "name": "Malakal",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -48,12 +49,12 @@
       "type": "Feature",
       "properties": {
         "name": "Bentiu",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          29.790,
+          29.79,
           9.263
         ]
       }
@@ -62,7 +63,7 @@
       "type": "Feature",
       "properties": {
         "name": "Bor",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -76,13 +77,13 @@
       "type": "Feature",
       "properties": {
         "name": "Yei",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           30.677,
-          4.090
+          4.09
         ]
       }
     },
@@ -90,12 +91,12 @@
       "type": "Feature",
       "properties": {
         "name": "Aweil",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          27.400,
+          27.4,
           8.767
         ]
       }
@@ -104,7 +105,7 @@
       "type": "Feature",
       "properties": {
         "name": "Rumbek",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -118,7 +119,7 @@
       "type": "Feature",
       "properties": {
         "name": "Torit",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -132,7 +133,7 @@
       "type": "Feature",
       "properties": {
         "name": "Kuajok",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -146,7 +147,7 @@
       "type": "Feature",
       "properties": {
         "name": "Yambio",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -160,7 +161,7 @@
       "type": "Feature",
       "properties": {
         "name": "Renk",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -174,7 +175,7 @@
       "type": "Feature",
       "properties": {
         "name": "Akobo",
-        "minzoom": 0
+        "minzoom": 0.0
       },
       "geometry": {
         "type": "Point",
@@ -188,7 +189,7 @@
       "type": "Feature",
       "properties": {
         "name": "Kajo Keji",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -202,7 +203,7 @@
       "type": "Feature",
       "properties": {
         "name": "Pibor",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -216,7 +217,7 @@
       "type": "Feature",
       "properties": {
         "name": "Kapoeta",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -230,7 +231,7 @@
       "type": "Feature",
       "properties": {
         "name": "Nimule",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -244,7 +245,7 @@
       "type": "Feature",
       "properties": {
         "name": "Nasir",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -258,7 +259,7 @@
       "type": "Feature",
       "properties": {
         "name": "Maridi",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -272,7 +273,7 @@
       "type": "Feature",
       "properties": {
         "name": "Tonj",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -286,7 +287,7 @@
       "type": "Feature",
       "properties": {
         "name": "Bunj",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -300,7 +301,7 @@
       "type": "Feature",
       "properties": {
         "name": "Yida",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -314,7 +315,7 @@
       "type": "Feature",
       "properties": {
         "name": "Pariang",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -328,7 +329,7 @@
       "type": "Feature",
       "properties": {
         "name": "Mayom",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -342,13 +343,13 @@
       "type": "Feature",
       "properties": {
         "name": "Leer",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           30.144,
-          8.310
+          8.31
         ]
       }
     },
@@ -356,7 +357,7 @@
       "type": "Feature",
       "properties": {
         "name": "Mayendit",
-        "minzoom": 9
+        "minzoom": 9.0
       },
       "geometry": {
         "type": "Point",
@@ -370,7 +371,7 @@
       "type": "Feature",
       "properties": {
         "name": "Koch",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -384,7 +385,7 @@
       "type": "Feature",
       "properties": {
         "name": "Nyal",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -398,7 +399,7 @@
       "type": "Feature",
       "properties": {
         "name": "Old Fangak",
-        "minzoom": 9
+        "minzoom": 9.0
       },
       "geometry": {
         "type": "Point",
@@ -412,7 +413,7 @@
       "type": "Feature",
       "properties": {
         "name": "Ayod",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -426,12 +427,12 @@
       "type": "Feature",
       "properties": {
         "name": "Ulang",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          32.720,
+          32.72,
           8.656
         ]
       }
@@ -440,13 +441,13 @@
       "type": "Feature",
       "properties": {
         "name": "Maiwut",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           33.926,
-          8.610
+          8.61
         ]
       }
     },
@@ -454,7 +455,7 @@
       "type": "Feature",
       "properties": {
         "name": "Lankien",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -468,7 +469,7 @@
       "type": "Feature",
       "properties": {
         "name": "Waat",
-        "minzoom": 10
+        "minzoom": 10.0
       },
       "geometry": {
         "type": "Point",
@@ -482,7 +483,7 @@
       "type": "Feature",
       "properties": {
         "name": "Mankien",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -496,13 +497,13 @@
       "type": "Feature",
       "properties": {
         "name": "Raja",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          25.680,
-          8.460
+          25.68,
+          8.46
         ]
       }
     },
@@ -510,13 +511,13 @@
       "type": "Feature",
       "properties": {
         "name": "Mundri",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          30.280,
-          5.350
+          30.28,
+          5.35
         ]
       }
     },
@@ -524,7 +525,7 @@
       "type": "Feature",
       "properties": {
         "name": "Terekeka",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -538,7 +539,7 @@
       "type": "Feature",
       "properties": {
         "name": "Lainya",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -552,7 +553,7 @@
       "type": "Feature",
       "properties": {
         "name": "Magwi",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -566,12 +567,12 @@
       "type": "Feature",
       "properties": {
         "name": "Pochalla",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          34.100,
+          34.1,
           7.188
         ]
       }
@@ -580,7 +581,7 @@
       "type": "Feature",
       "properties": {
         "name": "Gumuruk",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
@@ -594,7 +595,7 @@
       "type": "Feature",
       "properties": {
         "name": "Pajok",
-        "minzoom": 10
+        "minzoom": 10.0
       },
       "geometry": {
         "type": "Point",
@@ -608,7 +609,7 @@
       "type": "Feature",
       "properties": {
         "name": "Kodok",
-        "minzoom": 9
+        "minzoom": 9.0
       },
       "geometry": {
         "type": "Point",
@@ -622,7 +623,7 @@
       "type": "Feature",
       "properties": {
         "name": "Aburoc",
-        "minzoom": 10
+        "minzoom": 10.0
       },
       "geometry": {
         "type": "Point",
@@ -664,15 +665,15 @@
       "type": "Feature",
       "properties": {
         "name": "Itang",
-        "minzoom": 7
+        "minzoom": 7.0
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           34.2661,
           8.1973
-  ]
-}
+        ]
+      }
     }
   ]
 }
