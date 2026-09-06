@@ -19,12 +19,13 @@ The viewer reads the immutable national South Sudan release, including a
 50 km border buffer for nearby refugee settlements, directly from:
 
 ```text
-https://storage.googleapis.com/south-sudan-buildings-tiles/
+https://tiles.angusmcb.com/
   releases/2026-07-ssd-obt-buffer50-z14-v2/tiles/war.pmtiles
   releases/2026-07-ssd-obt-buffer50-z14-v2/tiles/post.pmtiles
 ```
 
-The bucket permits anonymous reads and cross-origin `GET`/`HEAD` range
+The Cloudflare R2 bucket `south-sudan-tiles` permits anonymous reads and
+cross-origin `GET`/`HEAD` range
 requests. Its policy is reproduced by `config/viewer_bucket_cors.json`.
 
 Each lossless WebP tile contains data channels rather than final colours:

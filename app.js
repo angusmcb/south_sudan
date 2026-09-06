@@ -6,7 +6,7 @@
  * view state in the URL hash. No build step, no framework.
  *
  * National evidence, including a 50 km border buffer, is fetched as sparse
- * PMTiles from public GCS. Tile RGB is data (loss/gain/stable), not colour:
+ * PMTiles from public Cloudflare R2. Tile RGB is data (loss/gain/stable), not colour:
  * the custom evidence protocol applies the current browser theme before
  * MapLibre receives each raster tile. */
 
@@ -62,7 +62,7 @@ applyDocumentTheme();
 
 // ---- data source: immutable public release, raw evidence styled below ----
 const PUBLIC_RELEASE_ORIGIN =
-  "https://storage.googleapis.com/south-sudan-buildings-tiles/releases/";
+  "https://tiles.angusmcb.com/releases/";
 /* Count-density release (docs/viewer_design.md §5): change is detected on a
  * moving 573 m support and drawn on the 9.55 m analytic grid, with loss and gain
  * tested independently so a place that does both shows both. The archive
